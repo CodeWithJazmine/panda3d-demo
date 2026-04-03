@@ -1,11 +1,13 @@
 import sys
 from math import pi, sin, cos
-
 from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 from direct.actor.Actor import Actor
 from direct.interval.IntervalGlobal import Sequence
 from panda3d.core import Point3
+from panda3d.core import KeyboardButton
+from panda3d.core import ClockObject
+
 
 class MyApp(ShowBase):
 
@@ -19,7 +21,6 @@ class MyApp(ShowBase):
         # Apply scale and position transforms on model
         self.scene.setScale(0.25,0.25,0.25)
         self.scene.setPos(-8,42,0)
-
     
         # Load and transform the panda actor
         self.pandaActor = Actor("models/panda-model",
@@ -41,22 +42,53 @@ class MyApp(ShowBase):
                                   name="pandaPace")
         self.pandaPace.loop()
 
-        # Load another panda to control with the arrow keys
+        # Load another panda to be the player
         self.characterPanda = Actor("models/panda-model")
         self.characterPanda.setScale(0.005, 0.005, 0.005)
         self.characterPanda.reparentTo(self.render)
 
-        # Set camera position relative to character
-        # Disable mouse control of camera
+        # Set camera position relative to player Actor
+        # and disable mouse control of camera
         self.disableMouse()
+        self.camera.setPos(0, 3000, 1300) 
+        self.camera.setHpr(180,-10,0)
+        self.camLens.setFov(70)
         self.camera.reparentTo(self.characterPanda)
-        self.camera.setPos(0, 1500, 1500) 
-        self.camera.setHpr(180,-15,0)
-        self.camLens.setFov(80)
         
-        # Keyboard inputs
+        # Input 
         self.accept('escape', sys.exit)
 
+        # Register move_task to run every frame via the task manager
+        self.task_mgr.add(self.move_task, "moveTask")
+
+
+     # Called every frame
+    # Reads keyboard input and moves player character accordingly
+    def move_task(self, task):
+   
+        speed = 0.0
+        turn_speed = 0.0
+
+        is_down = self.mouseWatcherNode.is_button_down
+
+        if is_down(KeyboardButton.up()):
+            speed -= 1500.0
+
+        if is_down(KeyboardButton.down()):
+            speed += 1200.0
+
+        if is_down(KeyboardButton.left()):
+            turn_speed += 100.0
+
+        if is_down(KeyboardButton.right()):
+            turn_speed -= 100.0 
+
+        dt = ClockObject.getGlobalClock().getDt()
+        y_delta = speed * dt
+        self.characterPanda.set_y(self.characterPanda, y_delta)
+        self.characterPanda.setH(self.characterPanda, turn_speed * dt)
+
+        return Task.cont
 
         
 app = MyApp()
