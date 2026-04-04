@@ -43,9 +43,11 @@ class MyApp(ShowBase):
         self.pandaPace.loop()
 
         # Load another panda to be the player
-        self.characterPanda = Actor("models/panda-model")
+        self.characterPanda = Actor("models/panda-model",
+                                    {"walk": "models/panda-walk4"})
         self.characterPanda.setScale(0.005, 0.005, 0.005)
         self.characterPanda.reparentTo(self.render)
+        self.isWalking = False
 
         # Set camera position relative to player Actor
         # and disable mouse control of camera
@@ -65,25 +67,34 @@ class MyApp(ShowBase):
      # Called every frame
     # Reads keyboard input and moves player character accordingly
     def move_task(self, task):
-   
         speed = 0.0
         turn_speed = 0.0
-
+       
         is_down = self.mouseWatcherNode.is_button_down
 
         if is_down(KeyboardButton.up()):
-            speed -= 1500.0
+            speed -= 800.0
 
         if is_down(KeyboardButton.down()):
-            speed += 1200.0
+            speed += 500.0
 
         if is_down(KeyboardButton.left()):
-            turn_speed += 100.0
+            turn_speed += 50.0
 
         if is_down(KeyboardButton.right()):
-            turn_speed -= 100.0 
+            turn_speed -= 50.0 
 
         dt = ClockObject.getGlobalClock().getDt()
+
+        # Animate movement
+        is_moving = speed != 0.0 or turn_speed != 0.0
+        if is_moving and not self.isWalking:
+            self.characterPanda.loop("walk")
+            self.isWalking = True
+        elif not is_moving and self.isWalking:
+            self.characterPanda.stop()
+            self.isWalking = False
+
         y_delta = speed * dt
         self.characterPanda.set_y(self.characterPanda, y_delta)
         self.characterPanda.setH(self.characterPanda, turn_speed * dt)
