@@ -7,6 +7,8 @@ from direct.interval.IntervalGlobal import Sequence
 from panda3d.core import Point3
 from panda3d.core import KeyboardButton
 from panda3d.core import ClockObject
+from panda3d.core import CollisionTraverser, CollisionHandlerPusher
+from panda3d.core import CollisionSphere, CollisionNode
 
 
 class MyApp(ShowBase):
@@ -30,6 +32,16 @@ class MyApp(ShowBase):
         # Loop its animation
         self.pandaActor.loop("walk")
 
+        # --- Pacing Panda's Collision ---
+        # Create a collision node for the pacing panda
+        cNode = CollisionNode('pacing-panda')
+        # Attach a collision sphere to the collision node
+        cNode.addSolid(CollisionSphere(0,-130,250,520))
+        # Attach the collsion node to the pacing panda's model
+        self.pandaActorC = self.pandaActor.attachNewNode(cNode)
+        # Set the pacing panda's collision node to render as visible
+        self.pandaActorC.show()
+
         # Create the four lerp intervals needed for the panda to walk back and forth
         posInterval1 = self.pandaActor.posInterval(13, Point3(0,-10,0), startPos=Point3(0,10,0))
         posInterval2 = self.pandaActor.posInterval(13, Point3(0,10,0), startPos=Point3(0,-10,0))
@@ -49,6 +61,23 @@ class MyApp(ShowBase):
         self.characterPanda.reparentTo(self.render)
         self.isWalking = False
 
+
+         # --- Player's Collision ----
+        # Create a collision node for player model
+        cNode = CollisionNode('player')
+        # Attach  a collsion sphere to the collision node
+        cNode.addSolid(CollisionSphere(0,-130,250,520))
+        # Attach the collision node to the player's model
+        self.characterPandaC = self.characterPanda.attachNewNode(cNode)
+        # Set the player's collision node to render as visible
+        self.characterPandaC.show()
+        
+        # --- Collision Pusher ---
+        self.cTrav = CollisionTraverser()
+        pusher = CollisionHandlerPusher()
+        self.cTrav.addCollider(self.characterPandaC, pusher)
+        pusher.addCollider(self.characterPandaC, self.characterPanda, self.drive.node())
+        
         # Set camera position relative to player Actor
         # and disable mouse control of camera
         self.disableMouse()
@@ -64,7 +93,7 @@ class MyApp(ShowBase):
         self.task_mgr.add(self.move_task, "moveTask")
 
 
-     # Called every frame
+    # Called every frame
     # Reads keyboard input and moves player character accordingly
     def move_task(self, task):
         speed = 0.0
