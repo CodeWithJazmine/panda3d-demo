@@ -8,7 +8,7 @@ from panda3d.core import Point3
 from panda3d.core import KeyboardButton
 from panda3d.core import ClockObject
 from panda3d.core import CollisionTraverser, CollisionHandlerPusher
-from panda3d.core import CollisionSphere, CollisionNode
+from panda3d.core import CollisionSphere, CollisionCapsule, CollisionNode
 
 
 class MyApp(ShowBase):
@@ -16,6 +16,7 @@ class MyApp(ShowBase):
     def __init__(self):
         ShowBase.__init__(self)
 
+        # === Environment Model ===
         #Load the environment model
         self.scene = self.loader.loadModel("models/environment")
         # Reparent the model to render
@@ -24,6 +25,7 @@ class MyApp(ShowBase):
         self.scene.setScale(0.25,0.25,0.25)
         self.scene.setPos(-8,42,0)
     
+        # === Pacing Panda Actor ===
         # Load and transform the panda actor
         self.pandaActor = Actor("models/panda-model",
                                 {"walk": "models/panda-walk4"})
@@ -32,28 +34,29 @@ class MyApp(ShowBase):
         # Loop its animation
         self.pandaActor.loop("walk")
 
-        # --- Pacing Panda's Collision ---
+        # === Pacing Panda's Collision ===
         # Create a collision node for the pacing panda
         cNode = CollisionNode('pacing-panda')
         # Attach a collision sphere to the collision node
-        cNode.addSolid(CollisionSphere(0,-130,250,520))
+        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
         # Attach the collsion node to the pacing panda's model
         self.pandaActorC = self.pandaActor.attachNewNode(cNode)
         # Set the pacing panda's collision node to render as visible
         self.pandaActorC.show()
 
+        # === Pacing Panda's Movements ===
         # Create the four lerp intervals needed for the panda to walk back and forth
         posInterval1 = self.pandaActor.posInterval(13, Point3(0,-10,0), startPos=Point3(0,10,0))
         posInterval2 = self.pandaActor.posInterval(13, Point3(0,10,0), startPos=Point3(0,-10,0))
         hprInterval1 = self.pandaActor.hprInterval(3, Point3(180,0,0), startHpr=Point3(0,0,0))
         hprInterval2 = self.pandaActor.hprInterval(3, Point3(0,0,0), startHpr=Point3(180,0,0))
-
         # Create and play the sequence that coordinates the intervals
         self.pandaPace = Sequence(posInterval1, hprInterval1, 
                                   posInterval2, hprInterval2,
                                   name="pandaPace")
         self.pandaPace.loop()
 
+        # === Player Actor ===
         # Load another panda to be the player
         self.characterPanda = Actor("models/panda-model",
                                     {"walk": "models/panda-walk4"})
@@ -61,23 +64,23 @@ class MyApp(ShowBase):
         self.characterPanda.reparentTo(self.render)
         self.isWalking = False
 
-
-         # --- Player's Collision ----
+        # === Player's Collision ===
         # Create a collision node for player model
         cNode = CollisionNode('player')
         # Attach  a collsion sphere to the collision node
-        cNode.addSolid(CollisionSphere(0,-130,250,520))
+        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
         # Attach the collision node to the player's model
         self.characterPandaC = self.characterPanda.attachNewNode(cNode)
         # Set the player's collision node to render as visible
         self.characterPandaC.show()
         
-        # --- Collision Pusher ---
+        # === Collision Pusher ===
         self.cTrav = CollisionTraverser()
         pusher = CollisionHandlerPusher()
         self.cTrav.addCollider(self.characterPandaC, pusher)
         pusher.addCollider(self.characterPandaC, self.characterPanda, self.drive.node())
         
+        # === Camera Settings ===
         # Set camera position relative to player Actor
         # and disable mouse control of camera
         self.disableMouse()
@@ -86,9 +89,8 @@ class MyApp(ShowBase):
         self.camLens.setFov(70)
         self.camera.reparentTo(self.characterPanda)
         
-        # Input 
+        # === Input Settings ===
         self.accept('escape', sys.exit)
-
         # Register move_task to run every frame via the task manager
         self.task_mgr.add(self.move_task, "moveTask")
 
