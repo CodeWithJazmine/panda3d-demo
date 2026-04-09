@@ -4,10 +4,8 @@ from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 from direct.actor.Actor import Actor
 from direct.interval.IntervalGlobal import Sequence
-from panda3d.core import Point3
-from panda3d.core import KeyboardButton
-from panda3d.core import ClockObject
-from panda3d.core import CollisionTraverser, CollisionHandlerPusher
+from panda3d.core import Point3, KeyboardButton, ClockObject, BitMask32
+from panda3d.core import CollisionTraverser, CollisionHandlerPusher, CollisionHandlerEvent
 from panda3d.core import CollisionSphere, CollisionCapsule, CollisionNode
 
 
@@ -34,14 +32,12 @@ class MyApp(ShowBase):
         # Loop its animation
         self.pandaActor.loop("walk")
 
-        # === Pacing Panda's Collision ===
-        # Create a collision node for the pacing panda
+        # === Pacing Panda's Collision (channel 0)===
         cNode = CollisionNode('pacing-panda')
-        # Attach a collision sphere to the collision node
         cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
-        # Attach the collsion node to the pacing panda's model
+        cNode.setFromCollideMask(BitMask32.allOff())
+        cNode.setIntoCollideMask(BitMask32.bit(0))
         self.pandaActorC = self.pandaActor.attachNewNode(cNode)
-        # Set the pacing panda's collision node to render as visible
         self.pandaActorC.show()
 
         # === Pacing Panda's Movements ===
@@ -64,22 +60,48 @@ class MyApp(ShowBase):
         self.characterPanda.reparentTo(self.render)
         self.isWalking = False
 
-        # === Player's Collision ===
-        # Create a collision node for player model
-        cNode = CollisionNode('player')
-        # Attach  a collsion sphere to the collision node
+        # === Player Pusher Collision (channel 0)===
+        cNode = CollisionNode('player-pusher')
         cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
-        # Attach the collision node to the player's model
-        self.characterPandaC = self.characterPanda.attachNewNode(cNode)
-        # Set the player's collision node to render as visible
-        self.characterPandaC.show()
+        cNode.setFromCollideMask(BitMask32.bit(0))
+        cNode.setIntoCollideMask(BitMask32.allOff())
+        self.characterPandaPusher = self.characterPanda.attachNewNode(cNode)
+        self.characterPandaPusher.show()
+
+        # === Player Pickup Collision (channel 1)
+        cNode = CollisionNode('player-pusher')
+        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
+        cNode.setFromCollideMask(BitMask32.bit(1))
+        cNode.setIntoCollideMask(BitMask32.allOff())
+        self.characterPandaPickup = self.characterPanda.attachNewNode(cNode)
         
-        # === Collision Pusher ===
+        # === Smiley Model ===
+        self.smiley = self.loader.loadModel("models/smiley")
+        self.smiley.reparentTo(self.render)
+        self.smiley.setPos(5,0,1)
+
+        # === Smiley Pickup Collision (channel 0) ===
+        cNode = CollisionNode('smiley')
+        cNode.addSolid(CollisionSphere(0,0,0,1.5))
+        self.smileyC = self.smiley.attachNewNode(cNode)
+        self.smileyC.show()
+        cNode.setFromCollideMask(BitMask32.allOff())
+        cNode.setIntoCollideMask(BitMask32.bit(1))
+
+        # === Collision Traverser, Pusher, Handler ===
         self.cTrav = CollisionTraverser()
-        pusher = CollisionHandlerPusher()
-        self.cTrav.addCollider(self.characterPandaC, pusher)
-        pusher.addCollider(self.characterPandaC, self.characterPanda, self.drive.node())
-        
+
+        self.pusher = CollisionHandlerPusher()
+        self.cTrav.addCollider(self.characterPandaPusher, self.pusher)
+        self.pusher.addCollider(self.characterPandaPusher, self.characterPanda)
+
+        # --- Pickup Interaction ---
+        self.handler = CollisionHandlerEvent()
+        self.handler.addInPattern("player-into-smiley")
+        self.accept('player-into-smiley', self.handle_pickup)
+        self.cTrav.addCollider(self.characterPandaPickup, self.handler)
+
+
         # === Camera Settings ===
         # Set camera position relative to player Actor
         # and disable mouse control of camera
@@ -132,6 +154,10 @@ class MyApp(ShowBase):
 
         return Task.cont
 
+    def handle_pickup(self, entry):
+        print(entry)
+        self.smiley.removeNode()
+        
         
 app = MyApp()
 app.run()
