@@ -41,9 +41,9 @@ class Player:
         pusher.addCollider(characterPandaPusher, self.characterPanda)
 
         # --- Pickup Interaction ---
+        # Create a event notification when player collides with smiley
         handler = CollisionHandlerEvent()
         handler.addInPattern("player-pickup-into-smiley")
-        self.base.accept('player-pickup-into-smiley', self.handle_pickup)
         self.base.cTrav.addCollider(characterPandaPickup, handler)
 
 
@@ -98,7 +98,3 @@ class Player:
         self.characterPanda.setH(self.characterPanda, turn_speed * dt)
 
         return Task.cont
-
-    def handle_pickup(self, entry):
-        print(entry)
-        # self.smiley.removeNode()
