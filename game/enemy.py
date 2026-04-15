@@ -22,8 +22,7 @@ class Enemy:
         cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
         cNode.setFromCollideMask(BitMask32.allOff())
         cNode.setIntoCollideMask(BitMask32.bit(0))
-        pandaActorC = pandaActor.attachNewNode(cNode)
-        pandaActorC.show()
+        pandaActor.attachNewNode(cNode)
 
          # === Pacing Panda's Movements ===
         # Create the four lerp intervals needed for the panda to walk back and forth

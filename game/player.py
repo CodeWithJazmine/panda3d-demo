@@ -24,7 +24,6 @@ class Player:
         cNode.setFromCollideMask(BitMask32.bit(0))
         cNode.setIntoCollideMask(BitMask32.allOff())
         characterPandaPusher = self.characterPanda.attachNewNode(cNode)
-        characterPandaPusher.show()
 
         # === Player Pickup Collision (channel 1)
         cNode = CollisionNode('player-pickup')
