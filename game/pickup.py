@@ -2,7 +2,7 @@ from panda3d.core import CollisionSphere, CollisionNode, BitMask32
 from direct.showbase import DirectObject
 
 class Pickup(DirectObject.DirectObject):
-    """ Handles the pickup item and its collsion"""
+    """ Handles the pickup item and its collision"""
     def __init__(self, base):
         self.base = base
         self.accept('player-pickup-into-smiley', self.handlePickup)
@@ -23,7 +23,7 @@ class Pickup(DirectObject.DirectObject):
     def handlePickup(self, entry):
         print(entry)
         self.smiley.removeNode()
-        self.destory()
+        self.destroy()
 
     def destroy(self):
         self.ignoreAll()
