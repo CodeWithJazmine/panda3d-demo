@@ -23,6 +23,7 @@ class Pickup(DirectObject.DirectObject):
         hit = entry.getIntoNodePath().getParent()
         if hit == self.smiley:
             self.smiley.removeNode()
+            self.base.hud.incrementPickupCount()
             self.destroy()
 
     def destroy(self):
