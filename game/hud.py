@@ -1,16 +1,22 @@
 from panda3d.core import TextNode
+from direct.gui.DirectGui import *
 
 class Hud:
     def __init__(self,  base):
         self.base = base
 
-    #     self.count = 0
-    #     self.pickupCountText = TextNode('pickup count')
-    #     self.pickupCountText.setText(f'pickup count: {self.count}')
-    #     pickupCountTextNodePath = self.base.aspect2d.attachNewNode(self.pickupCountText)
-    #     pickupCountTextNodePath.setScale(0.07)
-    #     pickupCountTextNodePath.setPos(-1.3, 0, 0.9)
+    def OpenBattleHud(self):
+        bambooBonk = DirectButton(text=("Bamboo Bonk"), 
+                             scale = .08, command=self.ButtonPressed)
+        bambooBonk.setPos(1, 0, -0.5)
 
-    # def incrementPickupCount(self):
-    #     self.count += 1
-    #     self.pickupCountText.setText(f'pickup count: {self.count}')
+        leafFlurry = DirectButton(text=("Leaf Flurry"), 
+                             scale = .08, command=self.ButtonPressed)
+        leafFlurry.setPos(1, 0, -0.7)
+        
+        zenGuard = DirectButton(text=("Zen Guard"), 
+                             scale = .08, command=self.ButtonPressed)
+        zenGuard.setPos(1, 0, -0.9)
+
+    def ButtonPressed(self):
+        print("Button pressed")

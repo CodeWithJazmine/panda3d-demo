@@ -5,6 +5,7 @@ from panda3d.core import CollisionCapsule, CollisionNode
 from panda3d.core import CollisionTraverser, CollisionHandlerPusher, CollisionHandlerEvent
 from panda3d.core import KeyboardButton, ClockObject, BitMask32
 
+
 class Player:
     """Handles player actor, movement, animation, and collision."""
     def __init__(self, base):
@@ -18,34 +19,22 @@ class Player:
         self.characterPanda.reparentTo(self.base.render)
         self.isWalking = False
 
-        # === Player Pusher Collision (channel 0)===
-        cNode = CollisionNode('player-pusher')
-        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
-        cNode.setFromCollideMask(BitMask32.bit(0))
-        cNode.setIntoCollideMask(BitMask32.allOff())
-        characterPandaPusher = self.characterPanda.attachNewNode(cNode)
-
         # === Player Pickup Collision (channel 1)
-        cNode = CollisionNode('player-pickup')
+        cNode = CollisionNode('player-interact')
         cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
         cNode.setFromCollideMask(BitMask32.bit(1))
         cNode.setIntoCollideMask(BitMask32.allOff())
-        characterPandaPickup = self.characterPanda.attachNewNode(cNode)
+        characterPandaInteract = self.characterPanda.attachNewNode(cNode)
         
-        # === Collision Traverser, Pusher, Handler ===
+        # === Collision Traverser and Handler ===
         self.base.cTrav = CollisionTraverser()
 
-        pusher = CollisionHandlerPusher()
-        self.base.cTrav.addCollider(characterPandaPusher, pusher)
-        pusher.addCollider(characterPandaPusher, self.characterPanda)
-
-        # --- Pickup Interaction ---
-        # Create a event notification when player collides with smiley
+        # === Interact ===
+        # Create a event notification when player collides with interactables
         handler = CollisionHandlerEvent()
-        handler.addInPattern('player-pickup-into-smiley')
+        handler.addInPattern('player-into-smiley')
         handler.addInPattern('player-into-enemy')
-        self.base.cTrav.addCollider(characterPandaPickup, handler)
-
+        self.base.cTrav.addCollider(characterPandaInteract, handler)
 
         # === Camera Settings ===
         # Set camera position relative to player Actor
@@ -65,6 +54,10 @@ class Player:
     # Called every frame
     # Reads keyboard input and moves player character accordingly
     def move_task(self, task):
+        if self.base.isInBattle is True:
+            self.characterPanda.stop()
+            return
+        
         speed = 0.0
         turn_speed = 0.0
        

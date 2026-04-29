@@ -5,7 +5,7 @@ class Pickup(DirectObject.DirectObject):
     """ Handles the pickup item and its collision"""
     def __init__(self, base, pos=(5,0,1)):
         self.base = base
-        self.accept('player-pickup-into-smiley', self.handlePickup)
+        self.accept('player-into-smiley', self.handlePickup)
 
         # === Smiley Model ===
         self.smiley = self.base.loader.loadModel("models/smiley")
@@ -23,7 +23,6 @@ class Pickup(DirectObject.DirectObject):
         hit = entry.getIntoNodePath().getParent()
         if hit == self.smiley:
             self.smiley.removeNode()
-            # self.base.hud.incrementPickupCount()
             self.destroy()
 
     def destroy(self):

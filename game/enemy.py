@@ -40,3 +40,4 @@ class Enemy:
     def handleCollision(self, entry):
         self.pandaPace.pause()
         self.pandaActor.stop()
+        self.base.StartBattle()
