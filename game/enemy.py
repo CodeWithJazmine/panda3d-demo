@@ -7,6 +7,8 @@ class Enemy:
     """Handles the enemy actor, movements, and collision"""
     def __init__(self, base):
         self.base = base
+        self.health = 5
+
         self.base.accept('player-into-enemy', self.handleCollision)
 
         # === Pacing Panda Actor ===

@@ -10,6 +10,7 @@ class Player:
     """Handles player actor, movement, animation, and collision."""
     def __init__(self, base):
         self.base = base
+        self.health = 10
 
         # === Player Actor ===
         # Load another panda to be the player
@@ -91,3 +92,6 @@ class Player:
         self.characterPanda.setH(self.characterPanda, turn_speed * dt)
 
         return Task.cont
+    
+    def BambooBonk(self):
+        print("Bamboo Bonk")

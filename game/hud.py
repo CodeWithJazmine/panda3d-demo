@@ -7,7 +7,7 @@ class Hud:
 
     def OpenBattleHud(self):
         bambooBonk = DirectButton(text=("Bamboo Bonk"), 
-                             scale = .08, command=self.ButtonPressed)
+                             scale = .08, command=self.BambooBonkButton)
         bambooBonk.setPos(1, 0, -0.5)
 
         leafFlurry = DirectButton(text=("Leaf Flurry"), 
@@ -20,3 +20,6 @@ class Hud:
 
     def ButtonPressed(self):
         print("Button pressed")
+
+    def BambooBonkButton(self):
+        self.base.player.BambooBonk()
