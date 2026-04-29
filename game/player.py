@@ -42,7 +42,8 @@ class Player:
         # --- Pickup Interaction ---
         # Create a event notification when player collides with smiley
         handler = CollisionHandlerEvent()
-        handler.addInPattern("player-pickup-into-smiley")
+        handler.addInPattern('player-pickup-into-smiley')
+        handler.addInPattern('player-into-enemy')
         self.base.cTrav.addCollider(characterPandaPickup, handler)
 
 

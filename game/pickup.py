@@ -12,7 +12,7 @@ class Pickup(DirectObject.DirectObject):
         self.smiley.reparentTo(self.base.render)
         self.smiley.setPos(*pos)
 
-        # === Smiley Pickup Collision (channel 0) ===
+        # === Smiley Pickup Collision (channel 1) ===
         cNode = CollisionNode('smiley')
         cNode.addSolid(CollisionSphere(0,0,0,1.5))
         self.smiley.attachNewNode(cNode)
@@ -23,7 +23,7 @@ class Pickup(DirectObject.DirectObject):
         hit = entry.getIntoNodePath().getParent()
         if hit == self.smiley:
             self.smiley.removeNode()
-            self.base.hud.incrementPickupCount()
+            # self.base.hud.incrementPickupCount()
             self.destroy()
 
     def destroy(self):
