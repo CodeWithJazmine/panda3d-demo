@@ -51,14 +51,16 @@ class Player:
         # Register move_task to run every frame via the task manager
         self.base.task_mgr.add(self.move_task, "moveTask")       
 
+    def enable_move(self):
+        self.base.task_mgr.add(self.move_task, "moveTask")
+
+    def disable_move(self):
+        self.base.task_mgr.remove("moveTask")
+        self.characterPanda.stop()
 
     # Called every frame
     # Reads keyboard input and moves player character accordingly
-    def move_task(self, task):
-        if self.base.isInBattle is True:
-            self.characterPanda.stop()
-            return
-        
+    def move_task(self, task):        
         speed = 0.0
         turn_speed = 0.0
        
@@ -93,5 +95,6 @@ class Player:
 
         return Task.cont
     
-    def BambooBonk(self):
-        print("Bamboo Bonk")
+    def bamboo_bonk(self, enemy):
+        print("Bamboo Bonk move played")
+        enemy.take_damage(1)

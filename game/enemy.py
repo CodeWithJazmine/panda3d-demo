@@ -9,7 +9,7 @@ class Enemy:
         self.base = base
         self.health = 5
 
-        self.base.accept('player-into-enemy', self.handleCollision)
+        self.base.accept('player-into-enemy', self.handle_collision)
 
         # === Pacing Panda Actor ===
         # Load and transform the panda actor
@@ -39,7 +39,24 @@ class Enemy:
                                   name="pandaPace")
         self.pandaPace.loop()
 
-    def handleCollision(self, entry):
+    def handle_collision(self, entry):
         self.pandaPace.pause()
         self.pandaActor.stop()
-        self.base.StartBattle()
+        self.base.battle_manager.start_battle(self)
+
+    def take_damage(self, amount):
+        self.health -= amount
+        print(f"Enemy took {amount} damage.")
+
+        if self.health <= 0:
+            self.die()
+
+    def die(self):
+        print("Enemy defeated")
+        self.base.battle_manager.end_battle()
+        self.destroy()
+
+    def destroy(self):
+        self.pandaPace.finish()
+        self.pandaActor.cleanup()
+        self.pandaActor.removeNode()
