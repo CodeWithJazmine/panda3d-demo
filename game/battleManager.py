@@ -14,3 +14,9 @@ class BattleManager:
     def move_chosen(self, move):
         if move == "bamboo bonk":
             self.base.player.bamboo_bonk(self.enemy)
+        elif move == "leaf flurry":
+            self.base.player.leaf_flurry(self.enemy)
+        elif move == "zen guard":
+            self.base.player.zen_guard(self.enemy)
+    
+

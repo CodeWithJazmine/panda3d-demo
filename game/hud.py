@@ -11,11 +11,11 @@ class Hud:
         self.bambooBonk.setPos(1, 0, -0.5)
 
         self.leafFlurry = DirectButton(text=("Leaf Flurry"), 
-                             scale = .08, command=self.button_pressed)
+                             scale = .08, command=self.leaf_flurry_button)
         self.leafFlurry.setPos(1, 0, -0.7)
         
         self.zenGuard = DirectButton(text=("Zen Guard"), 
-                             scale = .08, command=self.button_pressed)
+                             scale = .08, command=self.zen_guard_button)
         self.zenGuard.setPos(1, 0, -0.9)
 
     def close_battle_hud(self):
@@ -28,3 +28,9 @@ class Hud:
 
     def bamboo_bonk_button(self):
         self.base.battle_manager.move_chosen("bamboo bonk")
+
+    def leaf_flurry_button(self):
+        self.base.battle_manager.move_chosen("leaf flurry")
+
+    def zen_guard_button(self):
+        self.base.battle_manager.move_chosen("zen guard")

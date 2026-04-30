@@ -98,3 +98,10 @@ class Player:
     def bamboo_bonk(self, enemy):
         print("Bamboo Bonk move played")
         enemy.take_damage(1)
+    
+    def leaf_flurry(self, enemy):
+        print("Leaf Flurry move played")
+        enemy.take_damage(2)
+
+    def zen_guard(self, enemy):
+        print("Zen Guard move played")
