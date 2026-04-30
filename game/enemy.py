@@ -44,16 +44,19 @@ class Enemy:
         self.pandaActor.stop()
         self.base.battle_manager.start_battle(self)
 
+    #TODO: create a base class to inherit from
     def take_damage(self, amount):
         self.health -= amount
         print(f"Enemy took {amount} damage.")
 
-        if self.health <= 0:
-            self.die()
+    def is_alive(self):
+        if self.health > 0:
+            return True
+        else:
+            return False
 
     def die(self):
         print("Enemy defeated")
-        self.base.battle_manager.end_battle()
         self.destroy()
 
     def destroy(self):

@@ -23,5 +23,8 @@ class Game(ShowBase):
         #     self.pickups.append(pickup)
         
 
-
+    def game_over(self):
+        #TODO: create a game over text popup in Hud
+        print("Game over")
+        self.player.disable_move()
 

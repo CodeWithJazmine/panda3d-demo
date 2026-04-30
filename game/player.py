@@ -105,3 +105,14 @@ class Player:
 
     def zen_guard(self, enemy):
         print("Zen Guard move played")
+    
+    #TODO: create a base class to inherit from
+    def take_damage(self, amount):
+        self.health -= amount
+        print(f"You took {amount} damage.")
+
+    def is_alive(self):
+        if self.health > 0:
+            return True
+        else:
+            return False
