@@ -39,4 +39,4 @@ This project emphasizes system design and separation of concerns, including:
 - Enemy AI decision flow
 - Modular move system (player and enemy actions)
 - Combat moves defining behavior and effects
-- Entity-bases state management (Player and Enemy)
+- Entity-based state management (Player and Enemy)
