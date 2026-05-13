@@ -1,6 +1,8 @@
+
 class BattleManager:
     def __init__(self, base):
         self.base = base
+        self.playersTurn = True
 
     def start_battle(self, enemy):
         self.enemy = enemy
@@ -14,6 +16,7 @@ class BattleManager:
     
     def player_turn(self):
         self.base.hud.open_battle_hud()
+        self.playersTurn = True
 
     def move_chosen(self, move):
         if move == "bamboo bonk":
@@ -26,6 +29,7 @@ class BattleManager:
         self.check_battle_state("enemy")
 
     def enemy_turn(self):
+        self.playersTurn = False
         self.base.hud.close_battle_hud()
         #TODO: create enemy ai attacks, for now...
         self.base.player.take_damage(1)
@@ -42,11 +46,16 @@ class BattleManager:
 
         elif turn == "enemy":
             if self.enemy.is_alive():
-                self.enemy_turn()
+                # Wait 2 seconds before enemy attacks
+                self.base.taskMgr.doMethodLater(2,self._do_enemy_turn, 'enemyTurn')
+               
             else:
                 self.enemy.die()
                 self.end_battle()
 
+    def _do_enemy_turn(self, task):
+        self.enemy_turn()
+        return task.done
 
 
     

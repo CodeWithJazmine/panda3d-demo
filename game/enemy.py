@@ -46,8 +46,9 @@ class Enemy:
 
     #TODO: create a base class to inherit from
     def take_damage(self, amount):
-        self.health -= amount
-        print(f"Enemy took {amount} damage.")
+        if amount > 0:
+            self.health -= amount
+            self.base.hud.show_turn_result(f"Enemy took {amount} damage.")
 
     def is_alive(self):
         if self.health > 0:

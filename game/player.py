@@ -15,7 +15,7 @@ class Player:
         # === Player Actor ===
         # Load another panda to be the player
         self.characterPanda = Actor("models/panda-model",
-                                         {"walk": "models/panda-walk4"})
+                                    {"walk": "models/panda-walk4"})
         self.characterPanda.setScale(0.005, 0.005, 0.005)
         self.characterPanda.reparentTo(self.base.render)
         self.isWalking = False
@@ -108,8 +108,9 @@ class Player:
     
     #TODO: create a base class to inherit from
     def take_damage(self, amount):
-        self.health -= amount
-        print(f"You took {amount} damage.")
+        if amount > 0:
+            self.health -= amount
+            self.base.hud.show_turn_result(f"You took {amount} damage.")
 
     def is_alive(self):
         if self.health > 0:

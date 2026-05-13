@@ -1,0 +1,2144 @@
+commit dd219657d7533cd4deac5453dd3440c1f1bd207f
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Thu Apr 30 14:16:55 2026 -0700
+
+    feat: enhance battle mechanics with player and enemy turn logic, add health checks, and implement game over state
+
+diff --git a/game/battleManager.py b/game/battleManager.py
+index 199d656..5e84107 100644
+--- a/game/battleManager.py
++++ b/game/battleManager.py
+@@ -5,12 +5,16 @@ class BattleManager:
+     def start_battle(self, enemy):
+         self.enemy = enemy
+         self.base.player.disable_move()
+-        self.base.hud.open_battle_hud()
++
++        self.player_turn()
+     
+     def end_battle(self):
+         self.base.player.enable_move()
+         self.base.hud.close_battle_hud()
+     
++    def player_turn(self):
++        self.base.hud.open_battle_hud()
++
+     def move_chosen(self, move):
+         if move == "bamboo bonk":
+             self.base.player.bamboo_bonk(self.enemy)
+@@ -18,5 +22,33 @@ class BattleManager:
+             self.base.player.leaf_flurry(self.enemy)
+         elif move == "zen guard":
+             self.base.player.zen_guard(self.enemy)
++
++        self.check_battle_state("enemy")
++
++    def enemy_turn(self):
++        self.base.hud.close_battle_hud()
++        #TODO: create enemy ai attacks, for now...
++        self.base.player.take_damage(1)
++
++        self.check_battle_state("player")
++
++    def check_battle_state(self, turn):
++        if turn == "player":
++            if self.base.player.is_alive():
++                self.player_turn()
++            else:
++                self.end_battle()
++                self.base.game_over()
++
++        elif turn == "enemy":
++            if self.enemy.is_alive():
++                self.enemy_turn()
++            else:
++                self.enemy.die()
++                self.end_battle()
++
++
++
++    
+     
+ 
+diff --git a/game/enemy.py b/game/enemy.py
+index 3da1a01..5cf4f84 100644
+--- a/game/enemy.py
++++ b/game/enemy.py
+@@ -44,16 +44,19 @@ class Enemy:
+         self.pandaActor.stop()
+         self.base.battle_manager.start_battle(self)
+ 
++    #TODO: create a base class to inherit from
+     def take_damage(self, amount):
+         self.health -= amount
+         print(f"Enemy took {amount} damage.")
+ 
+-        if self.health <= 0:
+-            self.die()
++    def is_alive(self):
++        if self.health > 0:
++            return True
++        else:
++            return False
+ 
+     def die(self):
+         print("Enemy defeated")
+-        self.base.battle_manager.end_battle()
+         self.destroy()
+ 
+     def destroy(self):
+diff --git a/game/game.py b/game/game.py
+index 32b2343..a7b3541 100644
+--- a/game/game.py
++++ b/game/game.py
+@@ -23,5 +23,8 @@ class Game(ShowBase):
+         #     self.pickups.append(pickup)
+         
+ 
+-
++    def game_over(self):
++        #TODO: create a game over text popup in Hud
++        print("Game over")
++        self.player.disable_move()
+ 
+diff --git a/game/player.py b/game/player.py
+index 982d24e..5bfc372 100644
+--- a/game/player.py
++++ b/game/player.py
+@@ -104,4 +104,15 @@ class Player:
+         enemy.take_damage(2)
+ 
+     def zen_guard(self, enemy):
+-        print("Zen Guard move played")
+\ No newline at end of file
++        print("Zen Guard move played")
++    
++    #TODO: create a base class to inherit from
++    def take_damage(self, amount):
++        self.health -= amount
++        print(f"You took {amount} damage.")
++
++    def is_alive(self):
++        if self.health > 0:
++            return True
++        else:
++            return False
+\ No newline at end of file
+
+commit 4c53a7d8b829923cdc7b0c7d23ef7f9ce4dad9c0
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Thu Apr 30 13:16:00 2026 -0700
+
+    feat: add Leaf Flurry and Zen Guard moves with corresponding HUD buttons
+
+diff --git a/game/battleManager.py b/game/battleManager.py
+index 47ffed6..199d656 100644
+--- a/game/battleManager.py
++++ b/game/battleManager.py
+@@ -14,3 +14,9 @@ class BattleManager:
+     def move_chosen(self, move):
+         if move == "bamboo bonk":
+             self.base.player.bamboo_bonk(self.enemy)
++        elif move == "leaf flurry":
++            self.base.player.leaf_flurry(self.enemy)
++        elif move == "zen guard":
++            self.base.player.zen_guard(self.enemy)
++    
++
+diff --git a/game/hud.py b/game/hud.py
+index 3d4d45c..4ed665a 100644
+--- a/game/hud.py
++++ b/game/hud.py
+@@ -11,11 +11,11 @@ class Hud:
+         self.bambooBonk.setPos(1, 0, -0.5)
+ 
+         self.leafFlurry = DirectButton(text=("Leaf Flurry"), 
+-                             scale = .08, command=self.button_pressed)
++                             scale = .08, command=self.leaf_flurry_button)
+         self.leafFlurry.setPos(1, 0, -0.7)
+         
+         self.zenGuard = DirectButton(text=("Zen Guard"), 
+-                             scale = .08, command=self.button_pressed)
++                             scale = .08, command=self.zen_guard_button)
+         self.zenGuard.setPos(1, 0, -0.9)
+ 
+     def close_battle_hud(self):
+@@ -27,4 +27,10 @@ class Hud:
+         print("Button pressed")
+ 
+     def bamboo_bonk_button(self):
+-        self.base.battle_manager.move_chosen("bamboo bonk")
+\ No newline at end of file
++        self.base.battle_manager.move_chosen("bamboo bonk")
++
++    def leaf_flurry_button(self):
++        self.base.battle_manager.move_chosen("leaf flurry")
++
++    def zen_guard_button(self):
++        self.base.battle_manager.move_chosen("zen guard")
+\ No newline at end of file
+diff --git a/game/player.py b/game/player.py
+index 0ffb104..982d24e 100644
+--- a/game/player.py
++++ b/game/player.py
+@@ -97,4 +97,11 @@ class Player:
+     
+     def bamboo_bonk(self, enemy):
+         print("Bamboo Bonk move played")
+-        enemy.take_damage(1)
+\ No newline at end of file
++        enemy.take_damage(1)
++    
++    def leaf_flurry(self, enemy):
++        print("Leaf Flurry move played")
++        enemy.take_damage(2)
++
++    def zen_guard(self, enemy):
++        print("Zen Guard move played")
+\ No newline at end of file
+
+commit aeadb67e7a62a7d84a5b191ab8f21ebcb9a9a852
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Thu Apr 30 13:08:34 2026 -0700
+
+    feat: implement battle system with enemy interactions and HUD updates
+
+diff --git a/game/battleManager.py b/game/battleManager.py
+new file mode 100644
+index 0000000..47ffed6
+--- /dev/null
++++ b/game/battleManager.py
+@@ -0,0 +1,16 @@
++class BattleManager:
++    def __init__(self, base):
++        self.base = base
++
++    def start_battle(self, enemy):
++        self.enemy = enemy
++        self.base.player.disable_move()
++        self.base.hud.open_battle_hud()
++    
++    def end_battle(self):
++        self.base.player.enable_move()
++        self.base.hud.close_battle_hud()
++    
++    def move_chosen(self, move):
++        if move == "bamboo bonk":
++            self.base.player.bamboo_bonk(self.enemy)
+diff --git a/game/enemy.py b/game/enemy.py
+index 7de3782..3da1a01 100644
+--- a/game/enemy.py
++++ b/game/enemy.py
+@@ -9,7 +9,7 @@ class Enemy:
+         self.base = base
+         self.health = 5
+ 
+-        self.base.accept('player-into-enemy', self.handleCollision)
++        self.base.accept('player-into-enemy', self.handle_collision)
+ 
+         # === Pacing Panda Actor ===
+         # Load and transform the panda actor
+@@ -39,7 +39,24 @@ class Enemy:
+                                   name="pandaPace")
+         self.pandaPace.loop()
+ 
+-    def handleCollision(self, entry):
++    def handle_collision(self, entry):
+         self.pandaPace.pause()
+         self.pandaActor.stop()
+-        self.base.StartBattle()
+\ No newline at end of file
++        self.base.battle_manager.start_battle(self)
++
++    def take_damage(self, amount):
++        self.health -= amount
++        print(f"Enemy took {amount} damage.")
++
++        if self.health <= 0:
++            self.die()
++
++    def die(self):
++        print("Enemy defeated")
++        self.base.battle_manager.end_battle()
++        self.destroy()
++
++    def destroy(self):
++        self.pandaPace.finish()
++        self.pandaActor.cleanup()
++        self.pandaActor.removeNode()
+\ No newline at end of file
+diff --git a/game/game.py b/game/game.py
+index e64e6ab..32b2343 100644
+--- a/game/game.py
++++ b/game/game.py
+@@ -4,6 +4,7 @@ from .world import World
+ from .enemy import Enemy
+ from .pickup import Pickup
+ from .hud import Hud
++from .battleManager import BattleManager
+ 
+ class Game(ShowBase):
+ 
+@@ -13,16 +14,14 @@ class Game(ShowBase):
+         self.world = World(self)
+         self.enemy = Enemy(self)
+         self.hud = Hud(self)
+-        self.isInBattle = False
++        self.battle_manager = BattleManager(self)
+ 
+-        positions = [(5,0,1), (10,5,1), (-5,5,1), (-10, 0, 1)]
+-        self.pickups = []
+-        for pos in positions:
+-            pickup = Pickup(self, pos)
+-            self.pickups.append(pickup)
++        # positions = [(5,0,1), (10,5,1), (-5,5,1), (-10, 0, 1)]
++        # self.pickups = []
++        # for pos in positions:
++        #     pickup = Pickup(self, pos)
++        #     self.pickups.append(pickup)
+         
+-    def StartBattle(self):
+-        self.isInBattle = True
+-        self.hud.OpenBattleHud()
++
+ 
+ 
+diff --git a/game/hud.py b/game/hud.py
+index 5ce77ef..3d4d45c 100644
+--- a/game/hud.py
++++ b/game/hud.py
+@@ -5,21 +5,26 @@ class Hud:
+     def __init__(self,  base):
+         self.base = base
+ 
+-    def OpenBattleHud(self):
+-        bambooBonk = DirectButton(text=("Bamboo Bonk"), 
+-                             scale = .08, command=self.BambooBonkButton)
+-        bambooBonk.setPos(1, 0, -0.5)
++    def open_battle_hud(self):
++        self.bambooBonk = DirectButton(text=("Bamboo Bonk"), 
++                             scale = .08, command=self.bamboo_bonk_button)
++        self.bambooBonk.setPos(1, 0, -0.5)
+ 
+-        leafFlurry = DirectButton(text=("Leaf Flurry"), 
+-                             scale = .08, command=self.ButtonPressed)
+-        leafFlurry.setPos(1, 0, -0.7)
++        self.leafFlurry = DirectButton(text=("Leaf Flurry"), 
++                             scale = .08, command=self.button_pressed)
++        self.leafFlurry.setPos(1, 0, -0.7)
+         
+-        zenGuard = DirectButton(text=("Zen Guard"), 
+-                             scale = .08, command=self.ButtonPressed)
+-        zenGuard.setPos(1, 0, -0.9)
++        self.zenGuard = DirectButton(text=("Zen Guard"), 
++                             scale = .08, command=self.button_pressed)
++        self.zenGuard.setPos(1, 0, -0.9)
+ 
+-    def ButtonPressed(self):
++    def close_battle_hud(self):
++        self.bambooBonk.destroy()
++        self.leafFlurry.destroy()
++        self.zenGuard.destroy()
++
++    def button_pressed(self):
+         print("Button pressed")
+ 
+-    def BambooBonkButton(self):
+-        self.base.player.BambooBonk()
+\ No newline at end of file
++    def bamboo_bonk_button(self):
++        self.base.battle_manager.move_chosen("bamboo bonk")
+\ No newline at end of file
+diff --git a/game/player.py b/game/player.py
+index e8b70cb..0ffb104 100644
+--- a/game/player.py
++++ b/game/player.py
+@@ -51,14 +51,16 @@ class Player:
+         # Register move_task to run every frame via the task manager
+         self.base.task_mgr.add(self.move_task, "moveTask")       
+ 
++    def enable_move(self):
++        self.base.task_mgr.add(self.move_task, "moveTask")
++
++    def disable_move(self):
++        self.base.task_mgr.remove("moveTask")
++        self.characterPanda.stop()
+ 
+     # Called every frame
+     # Reads keyboard input and moves player character accordingly
+-    def move_task(self, task):
+-        if self.base.isInBattle is True:
+-            self.characterPanda.stop()
+-            return
+-        
++    def move_task(self, task):        
+         speed = 0.0
+         turn_speed = 0.0
+        
+@@ -93,5 +95,6 @@ class Player:
+ 
+         return Task.cont
+     
+-    def BambooBonk(self):
+-        print("Bamboo Bonk")
+\ No newline at end of file
++    def bamboo_bonk(self, enemy):
++        print("Bamboo Bonk move played")
++        enemy.take_damage(1)
+\ No newline at end of file
+
+commit 4e15b88237f393fec2e33c634e03d3c75360b342
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 29 11:25:37 2026 -0700
+
+    feat: add Bamboo Bonk attack and fix HUD button command
+
+diff --git a/game/enemy.py b/game/enemy.py
+index 9ca50c1..7de3782 100644
+--- a/game/enemy.py
++++ b/game/enemy.py
+@@ -7,6 +7,8 @@ class Enemy:
+     """Handles the enemy actor, movements, and collision"""
+     def __init__(self, base):
+         self.base = base
++        self.health = 5
++
+         self.base.accept('player-into-enemy', self.handleCollision)
+ 
+         # === Pacing Panda Actor ===
+diff --git a/game/hud.py b/game/hud.py
+index 44f93c3..5ce77ef 100644
+--- a/game/hud.py
++++ b/game/hud.py
+@@ -7,7 +7,7 @@ class Hud:
+ 
+     def OpenBattleHud(self):
+         bambooBonk = DirectButton(text=("Bamboo Bonk"), 
+-                             scale = .08, command=self.ButtonPressed)
++                             scale = .08, command=self.BambooBonkButton)
+         bambooBonk.setPos(1, 0, -0.5)
+ 
+         leafFlurry = DirectButton(text=("Leaf Flurry"), 
+@@ -19,4 +19,7 @@ class Hud:
+         zenGuard.setPos(1, 0, -0.9)
+ 
+     def ButtonPressed(self):
+-        print("Button pressed")
+\ No newline at end of file
++        print("Button pressed")
++
++    def BambooBonkButton(self):
++        self.base.player.BambooBonk()
+\ No newline at end of file
+diff --git a/game/player.py b/game/player.py
+index 367f720..e8b70cb 100644
+--- a/game/player.py
++++ b/game/player.py
+@@ -10,6 +10,7 @@ class Player:
+     """Handles player actor, movement, animation, and collision."""
+     def __init__(self, base):
+         self.base = base
++        self.health = 10
+ 
+         # === Player Actor ===
+         # Load another panda to be the player
+@@ -90,4 +91,7 @@ class Player:
+         self.characterPanda.set_y(self.characterPanda, y_delta)
+         self.characterPanda.setH(self.characterPanda, turn_speed * dt)
+ 
+-        return Task.cont
+\ No newline at end of file
++        return Task.cont
++    
++    def BambooBonk(self):
++        print("Bamboo Bonk")
+\ No newline at end of file
+
+commit de71883b4542a17ce3942ff9bc3e360fbb8267c0
+Merge: c129d3d b88397e
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 29 11:11:29 2026 -0700
+
+    Merge branch 'main' of https://github.com/CodeWithJazmine/panda3d-demo
+
+commit c129d3d09a762d37f66523a46e441732cfa5519b
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 29 11:11:26 2026 -0700
+
+    feat: implement battle initiation and HUD updates for combat interactions
+
+diff --git a/game/enemy.py b/game/enemy.py
+index 4232d20..9ca50c1 100644
+--- a/game/enemy.py
++++ b/game/enemy.py
+@@ -39,4 +39,5 @@ class Enemy:
+ 
+     def handleCollision(self, entry):
+         self.pandaPace.pause()
+-        self.pandaActor.stop()
+\ No newline at end of file
++        self.pandaActor.stop()
++        self.base.StartBattle()
+\ No newline at end of file
+diff --git a/game/game.py b/game/game.py
+index 31ffe58..e64e6ab 100644
+--- a/game/game.py
++++ b/game/game.py
+@@ -13,11 +13,16 @@ class Game(ShowBase):
+         self.world = World(self)
+         self.enemy = Enemy(self)
+         self.hud = Hud(self)
++        self.isInBattle = False
+ 
+         positions = [(5,0,1), (10,5,1), (-5,5,1), (-10, 0, 1)]
+         self.pickups = []
+         for pos in positions:
+             pickup = Pickup(self, pos)
+             self.pickups.append(pickup)
++        
++    def StartBattle(self):
++        self.isInBattle = True
++        self.hud.OpenBattleHud()
+ 
+ 
+diff --git a/game/hud.py b/game/hud.py
+index 0da2327..44f93c3 100644
+--- a/game/hud.py
++++ b/game/hud.py
+@@ -1,16 +1,22 @@
+ from panda3d.core import TextNode
++from direct.gui.DirectGui import *
+ 
+ class Hud:
+     def __init__(self,  base):
+         self.base = base
+ 
+-    #     self.count = 0
+-    #     self.pickupCountText = TextNode('pickup count')
+-    #     self.pickupCountText.setText(f'pickup count: {self.count}')
+-    #     pickupCountTextNodePath = self.base.aspect2d.attachNewNode(self.pickupCountText)
+-    #     pickupCountTextNodePath.setScale(0.07)
+-    #     pickupCountTextNodePath.setPos(-1.3, 0, 0.9)
++    def OpenBattleHud(self):
++        bambooBonk = DirectButton(text=("Bamboo Bonk"), 
++                             scale = .08, command=self.ButtonPressed)
++        bambooBonk.setPos(1, 0, -0.5)
+ 
+-    # def incrementPickupCount(self):
+-    #     self.count += 1
+-    #     self.pickupCountText.setText(f'pickup count: {self.count}')
+\ No newline at end of file
++        leafFlurry = DirectButton(text=("Leaf Flurry"), 
++                             scale = .08, command=self.ButtonPressed)
++        leafFlurry.setPos(1, 0, -0.7)
++        
++        zenGuard = DirectButton(text=("Zen Guard"), 
++                             scale = .08, command=self.ButtonPressed)
++        zenGuard.setPos(1, 0, -0.9)
++
++    def ButtonPressed(self):
++        print("Button pressed")
+\ No newline at end of file
+diff --git a/game/pickup.py b/game/pickup.py
+index d71396b..1f9fd0b 100644
+--- a/game/pickup.py
++++ b/game/pickup.py
+@@ -5,7 +5,7 @@ class Pickup(DirectObject.DirectObject):
+     """ Handles the pickup item and its collision"""
+     def __init__(self, base, pos=(5,0,1)):
+         self.base = base
+-        self.accept('player-pickup-into-smiley', self.handlePickup)
++        self.accept('player-into-smiley', self.handlePickup)
+ 
+         # === Smiley Model ===
+         self.smiley = self.base.loader.loadModel("models/smiley")
+@@ -23,7 +23,6 @@ class Pickup(DirectObject.DirectObject):
+         hit = entry.getIntoNodePath().getParent()
+         if hit == self.smiley:
+             self.smiley.removeNode()
+-            # self.base.hud.incrementPickupCount()
+             self.destroy()
+ 
+     def destroy(self):
+diff --git a/game/player.py b/game/player.py
+index 08e8bdb..367f720 100644
+--- a/game/player.py
++++ b/game/player.py
+@@ -5,6 +5,7 @@ from panda3d.core import CollisionCapsule, CollisionNode
+ from panda3d.core import CollisionTraverser, CollisionHandlerPusher, CollisionHandlerEvent
+ from panda3d.core import KeyboardButton, ClockObject, BitMask32
+ 
++
+ class Player:
+     """Handles player actor, movement, animation, and collision."""
+     def __init__(self, base):
+@@ -18,34 +19,22 @@ class Player:
+         self.characterPanda.reparentTo(self.base.render)
+         self.isWalking = False
+ 
+-        # === Player Pusher Collision (channel 0)===
+-        cNode = CollisionNode('player-pusher')
+-        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
+-        cNode.setFromCollideMask(BitMask32.bit(0))
+-        cNode.setIntoCollideMask(BitMask32.allOff())
+-        characterPandaPusher = self.characterPanda.attachNewNode(cNode)
+-
+         # === Player Pickup Collision (channel 1)
+-        cNode = CollisionNode('player-pickup')
++        cNode = CollisionNode('player-interact')
+         cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
+         cNode.setFromCollideMask(BitMask32.bit(1))
+         cNode.setIntoCollideMask(BitMask32.allOff())
+-        characterPandaPickup = self.characterPanda.attachNewNode(cNode)
++        characterPandaInteract = self.characterPanda.attachNewNode(cNode)
+         
+-        # === Collision Traverser, Pusher, Handler ===
++        # === Collision Traverser and Handler ===
+         self.base.cTrav = CollisionTraverser()
+ 
+-        pusher = CollisionHandlerPusher()
+-        self.base.cTrav.addCollider(characterPandaPusher, pusher)
+-        pusher.addCollider(characterPandaPusher, self.characterPanda)
+-
+-        # --- Pickup Interaction ---
+-        # Create a event notification when player collides with smiley
++        # === Interact ===
++        # Create a event notification when player collides with interactables
+         handler = CollisionHandlerEvent()
+-        handler.addInPattern('player-pickup-into-smiley')
++        handler.addInPattern('player-into-smiley')
+         handler.addInPattern('player-into-enemy')
+-        self.base.cTrav.addCollider(characterPandaPickup, handler)
+-
++        self.base.cTrav.addCollider(characterPandaInteract, handler)
+ 
+         # === Camera Settings ===
+         # Set camera position relative to player Actor
+@@ -65,6 +54,10 @@ class Player:
+     # Called every frame
+     # Reads keyboard input and moves player character accordingly
+     def move_task(self, task):
++        if self.base.isInBattle is True:
++            self.characterPanda.stop()
++            return
++        
+         speed = 0.0
+         turn_speed = 0.0
+        
+
+commit 7364000f82778367295eeeb742da1651b3a365a7
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 29 10:14:41 2026 -0700
+
+    refactor: update enemy collision handling, remove pickup counter
+
+diff --git a/game/enemy.py b/game/enemy.py
+index e929216..4232d20 100644
+--- a/game/enemy.py
++++ b/game/enemy.py
+@@ -7,31 +7,36 @@ class Enemy:
+     """Handles the enemy actor, movements, and collision"""
+     def __init__(self, base):
+         self.base = base
++        self.base.accept('player-into-enemy', self.handleCollision)
+ 
+         # === Pacing Panda Actor ===
+         # Load and transform the panda actor
+-        pandaActor = Actor("models/panda-model",
++        self.pandaActor = Actor("models/panda-model",
+                                 {"walk": "models/panda-walk4"})
+-        pandaActor.setScale(0.005, 0.005, 0.005)
+-        pandaActor.reparentTo(self.base.render)
++        self.pandaActor.setScale(0.005, 0.005, 0.005)
++        self.pandaActor.reparentTo(self.base.render)
+         # Loop its animation
+-        pandaActor.loop("walk")
++        self.pandaActor.loop("walk")
+ 
+-        # === Pacing Panda's Collision (channel 0)===
++        # === Pacing Panda's Collision (channel 1)===
+         cNode = CollisionNode('pacing-panda')
+         cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
+         cNode.setFromCollideMask(BitMask32.allOff())
+-        cNode.setIntoCollideMask(BitMask32.bit(0))
+-        pandaActor.attachNewNode(cNode)
++        cNode.setIntoCollideMask(BitMask32.bit(1))
++        self.pandaActor.attachNewNode(cNode)
+ 
+          # === Pacing Panda's Movements ===
+         # Create the four lerp intervals needed for the panda to walk back and forth
+-        posInterval1 = pandaActor.posInterval(13, Point3(0,-10,0), startPos=Point3(0,10,0))
+-        posInterval2 = pandaActor.posInterval(13, Point3(0,10,0), startPos=Point3(0,-10,0))
+-        hprInterval1 = pandaActor.hprInterval(3, Point3(180,0,0), startHpr=Point3(0,0,0))
+-        hprInterval2 = pandaActor.hprInterval(3, Point3(0,0,0), startHpr=Point3(180,0,0))
++        posInterval1 = self.pandaActor.posInterval(13, Point3(0,-10,0), startPos=Point3(0,10,0))
++        posInterval2 = self.pandaActor.posInterval(13, Point3(0,10,0), startPos=Point3(0,-10,0))
++        hprInterval1 = self.pandaActor.hprInterval(3, Point3(180,0,0), startHpr=Point3(0,0,0))
++        hprInterval2 = self.pandaActor.hprInterval(3, Point3(0,0,0), startHpr=Point3(180,0,0))
+         # Create and play the sequence that coordinates the intervals
+-        pandaPace = Sequence(posInterval1, hprInterval1, 
++        self.pandaPace = Sequence(posInterval1, hprInterval1, 
+                                   posInterval2, hprInterval2,
+                                   name="pandaPace")
+-        pandaPace.loop()
+\ No newline at end of file
++        self.pandaPace.loop()
++
++    def handleCollision(self, entry):
++        self.pandaPace.pause()
++        self.pandaActor.stop()
+\ No newline at end of file
+diff --git a/game/hud.py b/game/hud.py
+index 08d622d..0da2327 100644
+--- a/game/hud.py
++++ b/game/hud.py
+@@ -4,13 +4,13 @@ class Hud:
+     def __init__(self,  base):
+         self.base = base
+ 
+-        self.count = 0
+-        self.pickupCountText = TextNode('pickup count')
+-        self.pickupCountText.setText(f'pickup count: {self.count}')
+-        pickupCountTextNodePath = self.base.aspect2d.attachNewNode(self.pickupCountText)
+-        pickupCountTextNodePath.setScale(0.07)
+-        pickupCountTextNodePath.setPos(-1.3, 0, 0.9)
++    #     self.count = 0
++    #     self.pickupCountText = TextNode('pickup count')
++    #     self.pickupCountText.setText(f'pickup count: {self.count}')
++    #     pickupCountTextNodePath = self.base.aspect2d.attachNewNode(self.pickupCountText)
++    #     pickupCountTextNodePath.setScale(0.07)
++    #     pickupCountTextNodePath.setPos(-1.3, 0, 0.9)
+ 
+-    def incrementPickupCount(self):
+-        self.count += 1
+-        self.pickupCountText.setText(f'pickup count: {self.count}')
+\ No newline at end of file
++    # def incrementPickupCount(self):
++    #     self.count += 1
++    #     self.pickupCountText.setText(f'pickup count: {self.count}')
+\ No newline at end of file
+diff --git a/game/pickup.py b/game/pickup.py
+index 8d303cc..d71396b 100644
+--- a/game/pickup.py
++++ b/game/pickup.py
+@@ -12,7 +12,7 @@ class Pickup(DirectObject.DirectObject):
+         self.smiley.reparentTo(self.base.render)
+         self.smiley.setPos(*pos)
+ 
+-        # === Smiley Pickup Collision (channel 0) ===
++        # === Smiley Pickup Collision (channel 1) ===
+         cNode = CollisionNode('smiley')
+         cNode.addSolid(CollisionSphere(0,0,0,1.5))
+         self.smiley.attachNewNode(cNode)
+@@ -23,7 +23,7 @@ class Pickup(DirectObject.DirectObject):
+         hit = entry.getIntoNodePath().getParent()
+         if hit == self.smiley:
+             self.smiley.removeNode()
+-            self.base.hud.incrementPickupCount()
++            # self.base.hud.incrementPickupCount()
+             self.destroy()
+ 
+     def destroy(self):
+diff --git a/game/player.py b/game/player.py
+index de07b8b..08e8bdb 100644
+--- a/game/player.py
++++ b/game/player.py
+@@ -42,7 +42,8 @@ class Player:
+         # --- Pickup Interaction ---
+         # Create a event notification when player collides with smiley
+         handler = CollisionHandlerEvent()
+-        handler.addInPattern("player-pickup-into-smiley")
++        handler.addInPattern('player-pickup-into-smiley')
++        handler.addInPattern('player-into-enemy')
+         self.base.cTrav.addCollider(characterPandaPickup, handler)
+ 
+ 
+
+commit b88397e789cbd059961f60c8af1a4a3d7b41b9fe
+Author: Jazmine Chargualaf <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 15 18:30:01 2026 -0700
+
+    Create README.md
+
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..2a50784
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,22 @@
++# Panda3D Demo
++
++A small third-person game demo built with Python and Panda3D.
++
++## What it demonstrates
++- Third-person character controller with keyboard input
++- Walk/idle animation state
++- Collision detection using bitmasks (pusher and event handlers)
++- Collectible pickup system with HUD score counter
++
++## Preview
++
++https://github.com/user-attachments/assets/6b94b20a-8478-434e-b2b9-a9fc59548943
++
++## How to run
++1. Install Panda3D: `pip3 install panda3d`
++2. Run: `python3 main.py`
++
++## Controls
++- Arrow Up / Down — move forward / backward
++- Arrow Left / Right — turn
++- Escape — quit
+
+commit 096722e720f4031a0ea65a08551cb852e0988a1d
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 15 15:17:43 2026 -0700
+
+    add HUD class to track and display pickup count
+
+diff --git a/game/game.py b/game/game.py
+index 7fdf79c..31ffe58 100644
+--- a/game/game.py
++++ b/game/game.py
+@@ -1,9 +1,9 @@
+ from direct.showbase.ShowBase import ShowBase
+-from panda3d.core import TextNode
+ from .player import Player
+ from .world import World
+ from .enemy import Enemy
+ from .pickup import Pickup
++from .hud import Hud
+ 
+ class Game(ShowBase):
+ 
+@@ -12,6 +12,7 @@ class Game(ShowBase):
+         self.player = Player(self)
+         self.world = World(self)
+         self.enemy = Enemy(self)
++        self.hud = Hud(self)
+ 
+         positions = [(5,0,1), (10,5,1), (-5,5,1), (-10, 0, 1)]
+         self.pickups = []
+diff --git a/game/hud.py b/game/hud.py
+new file mode 100644
+index 0000000..08d622d
+--- /dev/null
++++ b/game/hud.py
+@@ -0,0 +1,16 @@
++from panda3d.core import TextNode
++
++class Hud:
++    def __init__(self,  base):
++        self.base = base
++
++        self.count = 0
++        self.pickupCountText = TextNode('pickup count')
++        self.pickupCountText.setText(f'pickup count: {self.count}')
++        pickupCountTextNodePath = self.base.aspect2d.attachNewNode(self.pickupCountText)
++        pickupCountTextNodePath.setScale(0.07)
++        pickupCountTextNodePath.setPos(-1.3, 0, 0.9)
++
++    def incrementPickupCount(self):
++        self.count += 1
++        self.pickupCountText.setText(f'pickup count: {self.count}')
+\ No newline at end of file
+diff --git a/game/pickup.py b/game/pickup.py
+index d7ebff1..8d303cc 100644
+--- a/game/pickup.py
++++ b/game/pickup.py
+@@ -23,6 +23,7 @@ class Pickup(DirectObject.DirectObject):
+         hit = entry.getIntoNodePath().getParent()
+         if hit == self.smiley:
+             self.smiley.removeNode()
++            self.base.hud.incrementPickupCount()
+             self.destroy()
+ 
+     def destroy(self):
+
+commit 285fbb8f99f293eea40f7ed6216036a4f8747f8f
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 15 14:27:56 2026 -0700
+
+    add multiple pickup objects and removed visible colliders
+
+diff --git a/game/enemy.py b/game/enemy.py
+index a0e0cd9..e929216 100644
+--- a/game/enemy.py
++++ b/game/enemy.py
+@@ -22,8 +22,7 @@ class Enemy:
+         cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
+         cNode.setFromCollideMask(BitMask32.allOff())
+         cNode.setIntoCollideMask(BitMask32.bit(0))
+-        pandaActorC = pandaActor.attachNewNode(cNode)
+-        pandaActorC.show()
++        pandaActor.attachNewNode(cNode)
+ 
+          # === Pacing Panda's Movements ===
+         # Create the four lerp intervals needed for the panda to walk back and forth
+diff --git a/game/game.py b/game/game.py
+index 2fb3ae2..7fdf79c 100644
+--- a/game/game.py
++++ b/game/game.py
+@@ -1,4 +1,5 @@
+ from direct.showbase.ShowBase import ShowBase
++from panda3d.core import TextNode
+ from .player import Player
+ from .world import World
+ from .enemy import Enemy
+@@ -11,4 +12,11 @@ class Game(ShowBase):
+         self.player = Player(self)
+         self.world = World(self)
+         self.enemy = Enemy(self)
+-        self.pickup = Pickup(self)
++
++        positions = [(5,0,1), (10,5,1), (-5,5,1), (-10, 0, 1)]
++        self.pickups = []
++        for pos in positions:
++            pickup = Pickup(self, pos)
++            self.pickups.append(pickup)
++
++
+diff --git a/game/pickup.py b/game/pickup.py
+index 4d8047c..d7ebff1 100644
+--- a/game/pickup.py
++++ b/game/pickup.py
+@@ -3,27 +3,27 @@ from direct.showbase import DirectObject
+ 
+ class Pickup(DirectObject.DirectObject):
+     """ Handles the pickup item and its collision"""
+-    def __init__(self, base):
++    def __init__(self, base, pos=(5,0,1)):
+         self.base = base
+         self.accept('player-pickup-into-smiley', self.handlePickup)
+ 
+         # === Smiley Model ===
+         self.smiley = self.base.loader.loadModel("models/smiley")
+         self.smiley.reparentTo(self.base.render)
+-        self.smiley.setPos(5,0,1)
++        self.smiley.setPos(*pos)
+ 
+         # === Smiley Pickup Collision (channel 0) ===
+         cNode = CollisionNode('smiley')
+         cNode.addSolid(CollisionSphere(0,0,0,1.5))
+-        smileyC = self.smiley.attachNewNode(cNode)
+-        smileyC.show()
++        self.smiley.attachNewNode(cNode)
+         cNode.setFromCollideMask(BitMask32.allOff())
+         cNode.setIntoCollideMask(BitMask32.bit(1))
+         
+     def handlePickup(self, entry):
+-        print(entry)
+-        self.smiley.removeNode()
+-        self.destroy()
++        hit = entry.getIntoNodePath().getParent()
++        if hit == self.smiley:
++            self.smiley.removeNode()
++            self.destroy()
+ 
+     def destroy(self):
+         self.ignoreAll()
+\ No newline at end of file
+diff --git a/game/player.py b/game/player.py
+index 3b93ab2..de07b8b 100644
+--- a/game/player.py
++++ b/game/player.py
+@@ -24,7 +24,6 @@ class Player:
+         cNode.setFromCollideMask(BitMask32.bit(0))
+         cNode.setIntoCollideMask(BitMask32.allOff())
+         characterPandaPusher = self.characterPanda.attachNewNode(cNode)
+-        characterPandaPusher.show()
+ 
+         # === Player Pickup Collision (channel 1)
+         cNode = CollisionNode('player-pickup')
+
+commit 9571ee240148aaaaf0090d6040444b23fe05d735
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Tue Apr 14 20:16:50 2026 -0700
+
+    fix: correct spelling errors in Pickup class docstring and method
+
+diff --git a/game/pickup.py b/game/pickup.py
+index 1c5ae1d..4d8047c 100644
+--- a/game/pickup.py
++++ b/game/pickup.py
+@@ -2,7 +2,7 @@ from panda3d.core import CollisionSphere, CollisionNode, BitMask32
+ from direct.showbase import DirectObject
+ 
+ class Pickup(DirectObject.DirectObject):
+-    """ Handles the pickup item and its collsion"""
++    """ Handles the pickup item and its collision"""
+     def __init__(self, base):
+         self.base = base
+         self.accept('player-pickup-into-smiley', self.handlePickup)
+@@ -23,7 +23,7 @@ class Pickup(DirectObject.DirectObject):
+     def handlePickup(self, entry):
+         print(entry)
+         self.smiley.removeNode()
+-        self.destory()
++        self.destroy()
+ 
+     def destroy(self):
+         self.ignoreAll()
+\ No newline at end of file
+
+commit 1cf5b84f2c3954f520c75f15ee8a1bb78dec9cbf
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Tue Apr 14 12:32:48 2026 -0700
+
+    refactor: enhance Pickup class and integrate collision handling for smiley model
+
+diff --git a/game/pickup.py b/game/pickup.py
+index 8582520..1c5ae1d 100644
+--- a/game/pickup.py
++++ b/game/pickup.py
+@@ -1,19 +1,29 @@
+ from panda3d.core import CollisionSphere, CollisionNode, BitMask32
++from direct.showbase import DirectObject
+ 
+-class Pickup:
++class Pickup(DirectObject.DirectObject):
+     """ Handles the pickup item and its collsion"""
+     def __init__(self, base):
+         self.base = base
++        self.accept('player-pickup-into-smiley', self.handlePickup)
+ 
+         # === Smiley Model ===
+-        smiley = self.base.loader.loadModel("models/smiley")
+-        smiley.reparentTo(self.base.render)
+-        smiley.setPos(5,0,1)
++        self.smiley = self.base.loader.loadModel("models/smiley")
++        self.smiley.reparentTo(self.base.render)
++        self.smiley.setPos(5,0,1)
+ 
+         # === Smiley Pickup Collision (channel 0) ===
+         cNode = CollisionNode('smiley')
+         cNode.addSolid(CollisionSphere(0,0,0,1.5))
+-        smileyC = smiley.attachNewNode(cNode)
++        smileyC = self.smiley.attachNewNode(cNode)
+         smileyC.show()
+         cNode.setFromCollideMask(BitMask32.allOff())
+-        cNode.setIntoCollideMask(BitMask32.bit(1))
+\ No newline at end of file
++        cNode.setIntoCollideMask(BitMask32.bit(1))
++        
++    def handlePickup(self, entry):
++        print(entry)
++        self.smiley.removeNode()
++        self.destory()
++
++    def destroy(self):
++        self.ignoreAll()
+\ No newline at end of file
+diff --git a/game/player.py b/game/player.py
+index e6e421f..3b93ab2 100644
+--- a/game/player.py
++++ b/game/player.py
+@@ -41,9 +41,9 @@ class Player:
+         pusher.addCollider(characterPandaPusher, self.characterPanda)
+ 
+         # --- Pickup Interaction ---
++        # Create a event notification when player collides with smiley
+         handler = CollisionHandlerEvent()
+         handler.addInPattern("player-pickup-into-smiley")
+-        self.base.accept('player-pickup-into-smiley', self.handle_pickup)
+         self.base.cTrav.addCollider(characterPandaPickup, handler)
+ 
+ 
+@@ -97,8 +97,4 @@ class Player:
+         self.characterPanda.set_y(self.characterPanda, y_delta)
+         self.characterPanda.setH(self.characterPanda, turn_speed * dt)
+ 
+-        return Task.cont
+-
+-    def handle_pickup(self, entry):
+-        print(entry)
+-        # self.smiley.removeNode()
+\ No newline at end of file
++        return Task.cont
+\ No newline at end of file
+
+commit 82423287b6aca472cd232f8e1598c3fd0bac0a89
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Fri Apr 10 16:43:56 2026 -0700
+
+    refactor: organize classes into game package
+
+diff --git a/game/__init__.py b/game/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/game/enemy.py b/game/enemy.py
+new file mode 100644
+index 0000000..a0e0cd9
+--- /dev/null
++++ b/game/enemy.py
+@@ -0,0 +1,38 @@
++from direct.actor.Actor import Actor
++from panda3d.core import CollisionCapsule, CollisionNode
++from panda3d.core import BitMask32, Point3
++from direct.interval.IntervalGlobal import Sequence
++
++class Enemy:
++    """Handles the enemy actor, movements, and collision"""
++    def __init__(self, base):
++        self.base = base
++
++        # === Pacing Panda Actor ===
++        # Load and transform the panda actor
++        pandaActor = Actor("models/panda-model",
++                                {"walk": "models/panda-walk4"})
++        pandaActor.setScale(0.005, 0.005, 0.005)
++        pandaActor.reparentTo(self.base.render)
++        # Loop its animation
++        pandaActor.loop("walk")
++
++        # === Pacing Panda's Collision (channel 0)===
++        cNode = CollisionNode('pacing-panda')
++        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
++        cNode.setFromCollideMask(BitMask32.allOff())
++        cNode.setIntoCollideMask(BitMask32.bit(0))
++        pandaActorC = pandaActor.attachNewNode(cNode)
++        pandaActorC.show()
++
++         # === Pacing Panda's Movements ===
++        # Create the four lerp intervals needed for the panda to walk back and forth
++        posInterval1 = pandaActor.posInterval(13, Point3(0,-10,0), startPos=Point3(0,10,0))
++        posInterval2 = pandaActor.posInterval(13, Point3(0,10,0), startPos=Point3(0,-10,0))
++        hprInterval1 = pandaActor.hprInterval(3, Point3(180,0,0), startHpr=Point3(0,0,0))
++        hprInterval2 = pandaActor.hprInterval(3, Point3(0,0,0), startHpr=Point3(180,0,0))
++        # Create and play the sequence that coordinates the intervals
++        pandaPace = Sequence(posInterval1, hprInterval1, 
++                                  posInterval2, hprInterval2,
++                                  name="pandaPace")
++        pandaPace.loop()
+\ No newline at end of file
+diff --git a/game/game.py b/game/game.py
+new file mode 100644
+index 0000000..2fb3ae2
+--- /dev/null
++++ b/game/game.py
+@@ -0,0 +1,14 @@
++from direct.showbase.ShowBase import ShowBase
++from .player import Player
++from .world import World
++from .enemy import Enemy
++from .pickup import Pickup
++
++class Game(ShowBase):
++
++    def __init__(self):
++        ShowBase.__init__(self)
++        self.player = Player(self)
++        self.world = World(self)
++        self.enemy = Enemy(self)
++        self.pickup = Pickup(self)
+diff --git a/game/pickup.py b/game/pickup.py
+new file mode 100644
+index 0000000..8582520
+--- /dev/null
++++ b/game/pickup.py
+@@ -0,0 +1,19 @@
++from panda3d.core import CollisionSphere, CollisionNode, BitMask32
++
++class Pickup:
++    """ Handles the pickup item and its collsion"""
++    def __init__(self, base):
++        self.base = base
++
++        # === Smiley Model ===
++        smiley = self.base.loader.loadModel("models/smiley")
++        smiley.reparentTo(self.base.render)
++        smiley.setPos(5,0,1)
++
++        # === Smiley Pickup Collision (channel 0) ===
++        cNode = CollisionNode('smiley')
++        cNode.addSolid(CollisionSphere(0,0,0,1.5))
++        smileyC = smiley.attachNewNode(cNode)
++        smileyC.show()
++        cNode.setFromCollideMask(BitMask32.allOff())
++        cNode.setIntoCollideMask(BitMask32.bit(1))
+\ No newline at end of file
+diff --git a/game/player.py b/game/player.py
+new file mode 100644
+index 0000000..e6e421f
+--- /dev/null
++++ b/game/player.py
+@@ -0,0 +1,104 @@
++import sys
++from direct.task import Task 
++from direct.actor.Actor import Actor
++from panda3d.core import CollisionCapsule, CollisionNode
++from panda3d.core import CollisionTraverser, CollisionHandlerPusher, CollisionHandlerEvent
++from panda3d.core import KeyboardButton, ClockObject, BitMask32
++
++class Player:
++    """Handles player actor, movement, animation, and collision."""
++    def __init__(self, base):
++        self.base = base
++
++        # === Player Actor ===
++        # Load another panda to be the player
++        self.characterPanda = Actor("models/panda-model",
++                                         {"walk": "models/panda-walk4"})
++        self.characterPanda.setScale(0.005, 0.005, 0.005)
++        self.characterPanda.reparentTo(self.base.render)
++        self.isWalking = False
++
++        # === Player Pusher Collision (channel 0)===
++        cNode = CollisionNode('player-pusher')
++        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
++        cNode.setFromCollideMask(BitMask32.bit(0))
++        cNode.setIntoCollideMask(BitMask32.allOff())
++        characterPandaPusher = self.characterPanda.attachNewNode(cNode)
++        characterPandaPusher.show()
++
++        # === Player Pickup Collision (channel 1)
++        cNode = CollisionNode('player-pickup')
++        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
++        cNode.setFromCollideMask(BitMask32.bit(1))
++        cNode.setIntoCollideMask(BitMask32.allOff())
++        characterPandaPickup = self.characterPanda.attachNewNode(cNode)
++        
++        # === Collision Traverser, Pusher, Handler ===
++        self.base.cTrav = CollisionTraverser()
++
++        pusher = CollisionHandlerPusher()
++        self.base.cTrav.addCollider(characterPandaPusher, pusher)
++        pusher.addCollider(characterPandaPusher, self.characterPanda)
++
++        # --- Pickup Interaction ---
++        handler = CollisionHandlerEvent()
++        handler.addInPattern("player-pickup-into-smiley")
++        self.base.accept('player-pickup-into-smiley', self.handle_pickup)
++        self.base.cTrav.addCollider(characterPandaPickup, handler)
++
++
++        # === Camera Settings ===
++        # Set camera position relative to player Actor
++        # and disable mouse control of camera
++        self.base.disableMouse()
++        self.base.camera.setPos(0, 3000, 1300) 
++        self.base.camera.setHpr(180,-10,0)
++        self.base.camLens.setFov(70)
++        self.base.camera.reparentTo(self.characterPanda)
++        
++        # === Input Settings ===
++        self.base.accept('escape', sys.exit) # Does Panda3D have a way to close the program?
++        # Register move_task to run every frame via the task manager
++        self.base.task_mgr.add(self.move_task, "moveTask")       
++
++
++    # Called every frame
++    # Reads keyboard input and moves player character accordingly
++    def move_task(self, task):
++        speed = 0.0
++        turn_speed = 0.0
++       
++        is_down = self.base.mouseWatcherNode.is_button_down
++
++        if is_down(KeyboardButton.up()):
++            speed -= 800.0
++
++        if is_down(KeyboardButton.down()):
++            speed += 500.0
++
++        if is_down(KeyboardButton.left()):
++            turn_speed += 50.0
++
++        if is_down(KeyboardButton.right()):
++            turn_speed -= 50.0 
++
++        dt = ClockObject.getGlobalClock().getDt()
++
++        # Animate movement
++        is_moving = speed != 0.0 or turn_speed != 0.0
++        if is_moving and not self.isWalking:
++            self.characterPanda.loop("walk")
++            self.isWalking = True
++        elif not is_moving and self.isWalking:
++            self.characterPanda.stop()
++            self.isWalking = False
++
++        y_delta = speed * dt
++        self.characterPanda.set_y(self.characterPanda, y_delta)
++        self.characterPanda.setH(self.characterPanda, turn_speed * dt)
++
++        return Task.cont
++
++    def handle_pickup(self, entry):
++        print(entry)
++        # self.smiley.removeNode()
+\ No newline at end of file
+diff --git a/game/world.py b/game/world.py
+new file mode 100644
+index 0000000..e8bb4c7
+--- /dev/null
++++ b/game/world.py
+@@ -0,0 +1,10 @@
++class World:
++    """ Handles the generation of the environment scene"""
++    def __init__(self, base):
++        self.base = base
++
++        # === Environment Model ===
++        scene = self.base.loader.loadModel("models/environment")
++        scene.reparentTo(self.base.render)
++        scene.setScale(0.25,0.25,0.25)
++        scene.setPos(-8,42,0)
+diff --git a/main.py b/main.py
+index 648ccd8..2202914 100644
+--- a/main.py
++++ b/main.py
+@@ -1,163 +1,4 @@
+-import sys
+-from math import pi, sin, cos
+-from direct.showbase.ShowBase import ShowBase
+-from direct.task import Task
+-from direct.actor.Actor import Actor
+-from direct.interval.IntervalGlobal import Sequence
+-from panda3d.core import Point3, KeyboardButton, ClockObject, BitMask32
+-from panda3d.core import CollisionTraverser, CollisionHandlerPusher, CollisionHandlerEvent
+-from panda3d.core import CollisionSphere, CollisionCapsule, CollisionNode
+-
+-
+-class MyApp(ShowBase):
+-
+-    def __init__(self):
+-        ShowBase.__init__(self)
+-
+-        # === Environment Model ===
+-        #Load the environment model
+-        self.scene = self.loader.loadModel("models/environment")
+-        # Reparent the model to render
+-        self.scene.reparentTo(self.render)
+-        # Apply scale and position transforms on model
+-        self.scene.setScale(0.25,0.25,0.25)
+-        self.scene.setPos(-8,42,0)
+-    
+-        # === Pacing Panda Actor ===
+-        # Load and transform the panda actor
+-        self.pandaActor = Actor("models/panda-model",
+-                                {"walk": "models/panda-walk4"})
+-        self.pandaActor.setScale(0.005, 0.005, 0.005)
+-        self.pandaActor.reparentTo(self.render)
+-        # Loop its animation
+-        self.pandaActor.loop("walk")
+-
+-        # === Pacing Panda's Collision (channel 0)===
+-        cNode = CollisionNode('pacing-panda')
+-        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
+-        cNode.setFromCollideMask(BitMask32.allOff())
+-        cNode.setIntoCollideMask(BitMask32.bit(0))
+-        self.pandaActorC = self.pandaActor.attachNewNode(cNode)
+-        self.pandaActorC.show()
+-
+-        # === Pacing Panda's Movements ===
+-        # Create the four lerp intervals needed for the panda to walk back and forth
+-        posInterval1 = self.pandaActor.posInterval(13, Point3(0,-10,0), startPos=Point3(0,10,0))
+-        posInterval2 = self.pandaActor.posInterval(13, Point3(0,10,0), startPos=Point3(0,-10,0))
+-        hprInterval1 = self.pandaActor.hprInterval(3, Point3(180,0,0), startHpr=Point3(0,0,0))
+-        hprInterval2 = self.pandaActor.hprInterval(3, Point3(0,0,0), startHpr=Point3(180,0,0))
+-        # Create and play the sequence that coordinates the intervals
+-        self.pandaPace = Sequence(posInterval1, hprInterval1, 
+-                                  posInterval2, hprInterval2,
+-                                  name="pandaPace")
+-        self.pandaPace.loop()
+-
+-        # === Player Actor ===
+-        # Load another panda to be the player
+-        self.characterPanda = Actor("models/panda-model",
+-                                    {"walk": "models/panda-walk4"})
+-        self.characterPanda.setScale(0.005, 0.005, 0.005)
+-        self.characterPanda.reparentTo(self.render)
+-        self.isWalking = False
+-
+-        # === Player Pusher Collision (channel 0)===
+-        cNode = CollisionNode('player-pusher')
+-        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
+-        cNode.setFromCollideMask(BitMask32.bit(0))
+-        cNode.setIntoCollideMask(BitMask32.allOff())
+-        self.characterPandaPusher = self.characterPanda.attachNewNode(cNode)
+-        self.characterPandaPusher.show()
+-
+-        # === Player Pickup Collision (channel 1)
+-        cNode = CollisionNode('player-pusher')
+-        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
+-        cNode.setFromCollideMask(BitMask32.bit(1))
+-        cNode.setIntoCollideMask(BitMask32.allOff())
+-        self.characterPandaPickup = self.characterPanda.attachNewNode(cNode)
++from game.game import Game
+         
+-        # === Smiley Model ===
+-        self.smiley = self.loader.loadModel("models/smiley")
+-        self.smiley.reparentTo(self.render)
+-        self.smiley.setPos(5,0,1)
+-
+-        # === Smiley Pickup Collision (channel 0) ===
+-        cNode = CollisionNode('smiley')
+-        cNode.addSolid(CollisionSphere(0,0,0,1.5))
+-        self.smileyC = self.smiley.attachNewNode(cNode)
+-        self.smileyC.show()
+-        cNode.setFromCollideMask(BitMask32.allOff())
+-        cNode.setIntoCollideMask(BitMask32.bit(1))
+-
+-        # === Collision Traverser, Pusher, Handler ===
+-        self.cTrav = CollisionTraverser()
+-
+-        self.pusher = CollisionHandlerPusher()
+-        self.cTrav.addCollider(self.characterPandaPusher, self.pusher)
+-        self.pusher.addCollider(self.characterPandaPusher, self.characterPanda)
+-
+-        # --- Pickup Interaction ---
+-        self.handler = CollisionHandlerEvent()
+-        self.handler.addInPattern("player-into-smiley")
+-        self.accept('player-into-smiley', self.handle_pickup)
+-        self.cTrav.addCollider(self.characterPandaPickup, self.handler)
+-
+-
+-        # === Camera Settings ===
+-        # Set camera position relative to player Actor
+-        # and disable mouse control of camera
+-        self.disableMouse()
+-        self.camera.setPos(0, 3000, 1300) 
+-        self.camera.setHpr(180,-10,0)
+-        self.camLens.setFov(70)
+-        self.camera.reparentTo(self.characterPanda)
+-        
+-        # === Input Settings ===
+-        self.accept('escape', sys.exit)
+-        # Register move_task to run every frame via the task manager
+-        self.task_mgr.add(self.move_task, "moveTask")
+-
+-
+-    # Called every frame
+-    # Reads keyboard input and moves player character accordingly
+-    def move_task(self, task):
+-        speed = 0.0
+-        turn_speed = 0.0
+-       
+-        is_down = self.mouseWatcherNode.is_button_down
+-
+-        if is_down(KeyboardButton.up()):
+-            speed -= 800.0
+-
+-        if is_down(KeyboardButton.down()):
+-            speed += 500.0
+-
+-        if is_down(KeyboardButton.left()):
+-            turn_speed += 50.0
+-
+-        if is_down(KeyboardButton.right()):
+-            turn_speed -= 50.0 
+-
+-        dt = ClockObject.getGlobalClock().getDt()
+-
+-        # Animate movement
+-        is_moving = speed != 0.0 or turn_speed != 0.0
+-        if is_moving and not self.isWalking:
+-            self.characterPanda.loop("walk")
+-            self.isWalking = True
+-        elif not is_moving and self.isWalking:
+-            self.characterPanda.stop()
+-            self.isWalking = False
+-
+-        y_delta = speed * dt
+-        self.characterPanda.set_y(self.characterPanda, y_delta)
+-        self.characterPanda.setH(self.characterPanda, turn_speed * dt)
+-
+-        return Task.cont
+-
+-    def handle_pickup(self, entry):
+-        print(entry)
+-        self.smiley.removeNode()
+-        
+-        
+-app = MyApp()
+-app.run()
+\ No newline at end of file
++game = Game()
++game.run()
+\ No newline at end of file
+
+commit 618fa95f356ceb7449e2f0f31e6d87ff90d44e1f
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Thu Apr 9 16:10:22 2026 -0700
+
+    Enhance collision handling for panda and player models; add smiley model with pickup interaction
+
+diff --git a/main.py b/main.py
+index 421112e..648ccd8 100644
+--- a/main.py
++++ b/main.py
+@@ -4,10 +4,8 @@ from direct.showbase.ShowBase import ShowBase
+ from direct.task import Task
+ from direct.actor.Actor import Actor
+ from direct.interval.IntervalGlobal import Sequence
+-from panda3d.core import Point3
+-from panda3d.core import KeyboardButton
+-from panda3d.core import ClockObject
+-from panda3d.core import CollisionTraverser, CollisionHandlerPusher
++from panda3d.core import Point3, KeyboardButton, ClockObject, BitMask32
++from panda3d.core import CollisionTraverser, CollisionHandlerPusher, CollisionHandlerEvent
+ from panda3d.core import CollisionSphere, CollisionCapsule, CollisionNode
+ 
+ 
+@@ -34,14 +32,12 @@ class MyApp(ShowBase):
+         # Loop its animation
+         self.pandaActor.loop("walk")
+ 
+-        # === Pacing Panda's Collision ===
+-        # Create a collision node for the pacing panda
++        # === Pacing Panda's Collision (channel 0)===
+         cNode = CollisionNode('pacing-panda')
+-        # Attach a collision sphere to the collision node
+         cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
+-        # Attach the collsion node to the pacing panda's model
++        cNode.setFromCollideMask(BitMask32.allOff())
++        cNode.setIntoCollideMask(BitMask32.bit(0))
+         self.pandaActorC = self.pandaActor.attachNewNode(cNode)
+-        # Set the pacing panda's collision node to render as visible
+         self.pandaActorC.show()
+ 
+         # === Pacing Panda's Movements ===
+@@ -64,22 +60,48 @@ class MyApp(ShowBase):
+         self.characterPanda.reparentTo(self.render)
+         self.isWalking = False
+ 
+-        # === Player's Collision ===
+-        # Create a collision node for player model
+-        cNode = CollisionNode('player')
+-        # Attach  a collsion sphere to the collision node
++        # === Player Pusher Collision (channel 0)===
++        cNode = CollisionNode('player-pusher')
+         cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
+-        # Attach the collision node to the player's model
+-        self.characterPandaC = self.characterPanda.attachNewNode(cNode)
+-        # Set the player's collision node to render as visible
+-        self.characterPandaC.show()
++        cNode.setFromCollideMask(BitMask32.bit(0))
++        cNode.setIntoCollideMask(BitMask32.allOff())
++        self.characterPandaPusher = self.characterPanda.attachNewNode(cNode)
++        self.characterPandaPusher.show()
++
++        # === Player Pickup Collision (channel 1)
++        cNode = CollisionNode('player-pusher')
++        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
++        cNode.setFromCollideMask(BitMask32.bit(1))
++        cNode.setIntoCollideMask(BitMask32.allOff())
++        self.characterPandaPickup = self.characterPanda.attachNewNode(cNode)
+         
+-        # === Collision Pusher ===
++        # === Smiley Model ===
++        self.smiley = self.loader.loadModel("models/smiley")
++        self.smiley.reparentTo(self.render)
++        self.smiley.setPos(5,0,1)
++
++        # === Smiley Pickup Collision (channel 0) ===
++        cNode = CollisionNode('smiley')
++        cNode.addSolid(CollisionSphere(0,0,0,1.5))
++        self.smileyC = self.smiley.attachNewNode(cNode)
++        self.smileyC.show()
++        cNode.setFromCollideMask(BitMask32.allOff())
++        cNode.setIntoCollideMask(BitMask32.bit(1))
++
++        # === Collision Traverser, Pusher, Handler ===
+         self.cTrav = CollisionTraverser()
+-        pusher = CollisionHandlerPusher()
+-        self.cTrav.addCollider(self.characterPandaC, pusher)
+-        pusher.addCollider(self.characterPandaC, self.characterPanda, self.drive.node())
+-        
++
++        self.pusher = CollisionHandlerPusher()
++        self.cTrav.addCollider(self.characterPandaPusher, self.pusher)
++        self.pusher.addCollider(self.characterPandaPusher, self.characterPanda)
++
++        # --- Pickup Interaction ---
++        self.handler = CollisionHandlerEvent()
++        self.handler.addInPattern("player-into-smiley")
++        self.accept('player-into-smiley', self.handle_pickup)
++        self.cTrav.addCollider(self.characterPandaPickup, self.handler)
++
++
+         # === Camera Settings ===
+         # Set camera position relative to player Actor
+         # and disable mouse control of camera
+@@ -132,6 +154,10 @@ class MyApp(ShowBase):
+ 
+         return Task.cont
+ 
++    def handle_pickup(self, entry):
++        print(entry)
++        self.smiley.removeNode()
++        
+         
+ app = MyApp()
+ app.run()
+\ No newline at end of file
+
+commit 8ad9df73a7d27f5710325d0d215538329b983a87
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Thu Apr 9 14:27:28 2026 -0700
+
+    Refactor collision solid and for panda and player models
+
+diff --git a/main.py b/main.py
+index fb79bc3..421112e 100644
+--- a/main.py
++++ b/main.py
+@@ -8,7 +8,7 @@ from panda3d.core import Point3
+ from panda3d.core import KeyboardButton
+ from panda3d.core import ClockObject
+ from panda3d.core import CollisionTraverser, CollisionHandlerPusher
+-from panda3d.core import CollisionSphere, CollisionNode
++from panda3d.core import CollisionSphere, CollisionCapsule, CollisionNode
+ 
+ 
+ class MyApp(ShowBase):
+@@ -16,6 +16,7 @@ class MyApp(ShowBase):
+     def __init__(self):
+         ShowBase.__init__(self)
+ 
++        # === Environment Model ===
+         #Load the environment model
+         self.scene = self.loader.loadModel("models/environment")
+         # Reparent the model to render
+@@ -24,6 +25,7 @@ class MyApp(ShowBase):
+         self.scene.setScale(0.25,0.25,0.25)
+         self.scene.setPos(-8,42,0)
+     
++        # === Pacing Panda Actor ===
+         # Load and transform the panda actor
+         self.pandaActor = Actor("models/panda-model",
+                                 {"walk": "models/panda-walk4"})
+@@ -32,28 +34,29 @@ class MyApp(ShowBase):
+         # Loop its animation
+         self.pandaActor.loop("walk")
+ 
+-        # --- Pacing Panda's Collision ---
++        # === Pacing Panda's Collision ===
+         # Create a collision node for the pacing panda
+         cNode = CollisionNode('pacing-panda')
+         # Attach a collision sphere to the collision node
+-        cNode.addSolid(CollisionSphere(0,-130,250,520))
++        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
+         # Attach the collsion node to the pacing panda's model
+         self.pandaActorC = self.pandaActor.attachNewNode(cNode)
+         # Set the pacing panda's collision node to render as visible
+         self.pandaActorC.show()
+ 
++        # === Pacing Panda's Movements ===
+         # Create the four lerp intervals needed for the panda to walk back and forth
+         posInterval1 = self.pandaActor.posInterval(13, Point3(0,-10,0), startPos=Point3(0,10,0))
+         posInterval2 = self.pandaActor.posInterval(13, Point3(0,10,0), startPos=Point3(0,-10,0))
+         hprInterval1 = self.pandaActor.hprInterval(3, Point3(180,0,0), startHpr=Point3(0,0,0))
+         hprInterval2 = self.pandaActor.hprInterval(3, Point3(0,0,0), startHpr=Point3(180,0,0))
+-
+         # Create and play the sequence that coordinates the intervals
+         self.pandaPace = Sequence(posInterval1, hprInterval1, 
+                                   posInterval2, hprInterval2,
+                                   name="pandaPace")
+         self.pandaPace.loop()
+ 
++        # === Player Actor ===
+         # Load another panda to be the player
+         self.characterPanda = Actor("models/panda-model",
+                                     {"walk": "models/panda-walk4"})
+@@ -61,23 +64,23 @@ class MyApp(ShowBase):
+         self.characterPanda.reparentTo(self.render)
+         self.isWalking = False
+ 
+-
+-         # --- Player's Collision ----
++        # === Player's Collision ===
+         # Create a collision node for player model
+         cNode = CollisionNode('player')
+         # Attach  a collsion sphere to the collision node
+-        cNode.addSolid(CollisionSphere(0,-130,250,520))
++        cNode.addSolid(CollisionCapsule(0,-400,250,0,250,250,300))
+         # Attach the collision node to the player's model
+         self.characterPandaC = self.characterPanda.attachNewNode(cNode)
+         # Set the player's collision node to render as visible
+         self.characterPandaC.show()
+         
+-        # --- Collision Pusher ---
++        # === Collision Pusher ===
+         self.cTrav = CollisionTraverser()
+         pusher = CollisionHandlerPusher()
+         self.cTrav.addCollider(self.characterPandaC, pusher)
+         pusher.addCollider(self.characterPandaC, self.characterPanda, self.drive.node())
+         
++        # === Camera Settings ===
+         # Set camera position relative to player Actor
+         # and disable mouse control of camera
+         self.disableMouse()
+@@ -86,9 +89,8 @@ class MyApp(ShowBase):
+         self.camLens.setFov(70)
+         self.camera.reparentTo(self.characterPanda)
+         
+-        # Input 
++        # === Input Settings ===
+         self.accept('escape', sys.exit)
+-
+         # Register move_task to run every frame via the task manager
+         self.task_mgr.add(self.move_task, "moveTask")
+ 
+
+commit 9bac7b8cce192e1550f96afd5681aaf0d8e83d1e
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Sun Apr 5 16:57:38 2026 -0700
+
+    Add collision detection for panda and player models
+
+diff --git a/main.py b/main.py
+index 65d3b24..fb79bc3 100644
+--- a/main.py
++++ b/main.py
+@@ -7,6 +7,8 @@ from direct.interval.IntervalGlobal import Sequence
+ from panda3d.core import Point3
+ from panda3d.core import KeyboardButton
+ from panda3d.core import ClockObject
++from panda3d.core import CollisionTraverser, CollisionHandlerPusher
++from panda3d.core import CollisionSphere, CollisionNode
+ 
+ 
+ class MyApp(ShowBase):
+@@ -30,6 +32,16 @@ class MyApp(ShowBase):
+         # Loop its animation
+         self.pandaActor.loop("walk")
+ 
++        # --- Pacing Panda's Collision ---
++        # Create a collision node for the pacing panda
++        cNode = CollisionNode('pacing-panda')
++        # Attach a collision sphere to the collision node
++        cNode.addSolid(CollisionSphere(0,-130,250,520))
++        # Attach the collsion node to the pacing panda's model
++        self.pandaActorC = self.pandaActor.attachNewNode(cNode)
++        # Set the pacing panda's collision node to render as visible
++        self.pandaActorC.show()
++
+         # Create the four lerp intervals needed for the panda to walk back and forth
+         posInterval1 = self.pandaActor.posInterval(13, Point3(0,-10,0), startPos=Point3(0,10,0))
+         posInterval2 = self.pandaActor.posInterval(13, Point3(0,10,0), startPos=Point3(0,-10,0))
+@@ -49,6 +61,23 @@ class MyApp(ShowBase):
+         self.characterPanda.reparentTo(self.render)
+         self.isWalking = False
+ 
++
++         # --- Player's Collision ----
++        # Create a collision node for player model
++        cNode = CollisionNode('player')
++        # Attach  a collsion sphere to the collision node
++        cNode.addSolid(CollisionSphere(0,-130,250,520))
++        # Attach the collision node to the player's model
++        self.characterPandaC = self.characterPanda.attachNewNode(cNode)
++        # Set the player's collision node to render as visible
++        self.characterPandaC.show()
++        
++        # --- Collision Pusher ---
++        self.cTrav = CollisionTraverser()
++        pusher = CollisionHandlerPusher()
++        self.cTrav.addCollider(self.characterPandaC, pusher)
++        pusher.addCollider(self.characterPandaC, self.characterPanda, self.drive.node())
++        
+         # Set camera position relative to player Actor
+         # and disable mouse control of camera
+         self.disableMouse()
+@@ -64,7 +93,7 @@ class MyApp(ShowBase):
+         self.task_mgr.add(self.move_task, "moveTask")
+ 
+ 
+-     # Called every frame
++    # Called every frame
+     # Reads keyboard input and moves player character accordingly
+     def move_task(self, task):
+         speed = 0.0
+
+commit 53cad1f866095784f91fd4c4fa0c9e0523990e42
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Fri Apr 3 20:49:16 2026 -0700
+
+    Add movement animations for player
+
+diff --git a/main.py b/main.py
+index a9c1e3b..65d3b24 100644
+--- a/main.py
++++ b/main.py
+@@ -43,9 +43,11 @@ class MyApp(ShowBase):
+         self.pandaPace.loop()
+ 
+         # Load another panda to be the player
+-        self.characterPanda = Actor("models/panda-model")
++        self.characterPanda = Actor("models/panda-model",
++                                    {"walk": "models/panda-walk4"})
+         self.characterPanda.setScale(0.005, 0.005, 0.005)
+         self.characterPanda.reparentTo(self.render)
++        self.isWalking = False
+ 
+         # Set camera position relative to player Actor
+         # and disable mouse control of camera
+@@ -65,25 +67,34 @@ class MyApp(ShowBase):
+      # Called every frame
+     # Reads keyboard input and moves player character accordingly
+     def move_task(self, task):
+-   
+         speed = 0.0
+         turn_speed = 0.0
+-
++       
+         is_down = self.mouseWatcherNode.is_button_down
+ 
+         if is_down(KeyboardButton.up()):
+-            speed -= 1500.0
++            speed -= 800.0
+ 
+         if is_down(KeyboardButton.down()):
+-            speed += 1200.0
++            speed += 500.0
+ 
+         if is_down(KeyboardButton.left()):
+-            turn_speed += 100.0
++            turn_speed += 50.0
+ 
+         if is_down(KeyboardButton.right()):
+-            turn_speed -= 100.0 
++            turn_speed -= 50.0 
+ 
+         dt = ClockObject.getGlobalClock().getDt()
++
++        # Animate movement
++        is_moving = speed != 0.0 or turn_speed != 0.0
++        if is_moving and not self.isWalking:
++            self.characterPanda.loop("walk")
++            self.isWalking = True
++        elif not is_moving and self.isWalking:
++            self.characterPanda.stop()
++            self.isWalking = False
++
+         y_delta = speed * dt
+         self.characterPanda.set_y(self.characterPanda, y_delta)
+         self.characterPanda.setH(self.characterPanda, turn_speed * dt)
+
+commit 90aac3c9bec1fc0379c87c9b7f391b3e86e176c4
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Thu Apr 2 21:03:52 2026 -0700
+
+    Add player-controlled panda and implement movement with keyboard input
+
+diff --git a/main.py b/main.py
+index d76bb52..a9c1e3b 100644
+--- a/main.py
++++ b/main.py
+@@ -1,11 +1,13 @@
+ import sys
+ from math import pi, sin, cos
+-
+ from direct.showbase.ShowBase import ShowBase
+ from direct.task import Task
+ from direct.actor.Actor import Actor
+ from direct.interval.IntervalGlobal import Sequence
+ from panda3d.core import Point3
++from panda3d.core import KeyboardButton
++from panda3d.core import ClockObject
++
+ 
+ class MyApp(ShowBase):
+ 
+@@ -19,7 +21,6 @@ class MyApp(ShowBase):
+         # Apply scale and position transforms on model
+         self.scene.setScale(0.25,0.25,0.25)
+         self.scene.setPos(-8,42,0)
+-
+     
+         # Load and transform the panda actor
+         self.pandaActor = Actor("models/panda-model",
+@@ -41,22 +42,53 @@ class MyApp(ShowBase):
+                                   name="pandaPace")
+         self.pandaPace.loop()
+ 
+-        # Load another panda to control with the arrow keys
++        # Load another panda to be the player
+         self.characterPanda = Actor("models/panda-model")
+         self.characterPanda.setScale(0.005, 0.005, 0.005)
+         self.characterPanda.reparentTo(self.render)
+ 
+-        # Set camera position relative to character
+-        # Disable mouse control of camera
++        # Set camera position relative to player Actor
++        # and disable mouse control of camera
+         self.disableMouse()
++        self.camera.setPos(0, 3000, 1300) 
++        self.camera.setHpr(180,-10,0)
++        self.camLens.setFov(70)
+         self.camera.reparentTo(self.characterPanda)
+-        self.camera.setPos(0, 1500, 1500) 
+-        self.camera.setHpr(180,-15,0)
+-        self.camLens.setFov(80)
+         
+-        # Keyboard inputs
++        # Input 
+         self.accept('escape', sys.exit)
+ 
++        # Register move_task to run every frame via the task manager
++        self.task_mgr.add(self.move_task, "moveTask")
++
++
++     # Called every frame
++    # Reads keyboard input and moves player character accordingly
++    def move_task(self, task):
++   
++        speed = 0.0
++        turn_speed = 0.0
++
++        is_down = self.mouseWatcherNode.is_button_down
++
++        if is_down(KeyboardButton.up()):
++            speed -= 1500.0
++
++        if is_down(KeyboardButton.down()):
++            speed += 1200.0
++
++        if is_down(KeyboardButton.left()):
++            turn_speed += 100.0
++
++        if is_down(KeyboardButton.right()):
++            turn_speed -= 100.0 
++
++        dt = ClockObject.getGlobalClock().getDt()
++        y_delta = speed * dt
++        self.characterPanda.set_y(self.characterPanda, y_delta)
++        self.characterPanda.setH(self.characterPanda, turn_speed * dt)
++
++        return Task.cont
+ 
+         
+ app = MyApp()
+
+commit 5480b82928983bc663963ab1a4c310442cdb51fa
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 1 14:26:02 2026 -0700
+
+    Add a panda to represent the player and refactor camera for 3rd person view
+
+diff --git a/main.py b/main.py
+index 0c82c41..d76bb52 100644
+--- a/main.py
++++ b/main.py
+@@ -1,3 +1,4 @@
++import sys
+ from math import pi, sin, cos
+ 
+ from direct.showbase.ShowBase import ShowBase
+@@ -19,13 +20,11 @@ class MyApp(ShowBase):
+         self.scene.setScale(0.25,0.25,0.25)
+         self.scene.setPos(-8,42,0)
+ 
+-        # Add the spinCameraTask procedure to the task manager
+-        self.taskMgr.add(self.spinCameraTask, "SpinCameraTask")
+-
++    
+         # Load and transform the panda actor
+         self.pandaActor = Actor("models/panda-model",
+                                 {"walk": "models/panda-walk4"})
+-        self.pandaActor.setScale(0.005,0.005,0.005)
++        self.pandaActor.setScale(0.005, 0.005, 0.005)
+         self.pandaActor.reparentTo(self.render)
+         # Loop its animation
+         self.pandaActor.loop("walk")
+@@ -36,20 +35,28 @@ class MyApp(ShowBase):
+         hprInterval1 = self.pandaActor.hprInterval(3, Point3(180,0,0), startHpr=Point3(0,0,0))
+         hprInterval2 = self.pandaActor.hprInterval(3, Point3(0,0,0), startHpr=Point3(180,0,0))
+ 
+-        #Create and play the sequence that coordinates the intervals
++        # Create and play the sequence that coordinates the intervals
+         self.pandaPace = Sequence(posInterval1, hprInterval1, 
+                                   posInterval2, hprInterval2,
+                                   name="pandaPace")
+-
+         self.pandaPace.loop()
+ 
+-    # Define a procedure to move the camera
+-    def spinCameraTask(self, task):
+-        angleDegrees = task.time * 6.0
+-        angleRadians = angleDegrees * (pi/180.0)
+-        self.camera.setPos(20 * sin(angleRadians), -20 * cos(angleRadians), 3)
+-        self.camera.setHpr(angleDegrees,0,0)
+-        return Task.cont
++        # Load another panda to control with the arrow keys
++        self.characterPanda = Actor("models/panda-model")
++        self.characterPanda.setScale(0.005, 0.005, 0.005)
++        self.characterPanda.reparentTo(self.render)
++
++        # Set camera position relative to character
++        # Disable mouse control of camera
++        self.disableMouse()
++        self.camera.reparentTo(self.characterPanda)
++        self.camera.setPos(0, 1500, 1500) 
++        self.camera.setHpr(180,-15,0)
++        self.camLens.setFov(80)
++        
++        # Keyboard inputs
++        self.accept('escape', sys.exit)
++
+ 
+         
+ app = MyApp()
+
+commit 6ce86e07a3a7d746ddc9163c800d54876e545111
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 1 11:28:55 2026 -0700
+
+    Add panda walking animation with lerp intervals and sequence
+
+diff --git a/main.py b/main.py
+index d7a35f5..0c82c41 100644
+--- a/main.py
++++ b/main.py
+@@ -3,6 +3,8 @@ from math import pi, sin, cos
+ from direct.showbase.ShowBase import ShowBase
+ from direct.task import Task
+ from direct.actor.Actor import Actor
++from direct.interval.IntervalGlobal import Sequence
++from panda3d.core import Point3
+ 
+ class MyApp(ShowBase):
+ 
+@@ -28,6 +30,19 @@ class MyApp(ShowBase):
+         # Loop its animation
+         self.pandaActor.loop("walk")
+ 
++        # Create the four lerp intervals needed for the panda to walk back and forth
++        posInterval1 = self.pandaActor.posInterval(13, Point3(0,-10,0), startPos=Point3(0,10,0))
++        posInterval2 = self.pandaActor.posInterval(13, Point3(0,10,0), startPos=Point3(0,-10,0))
++        hprInterval1 = self.pandaActor.hprInterval(3, Point3(180,0,0), startHpr=Point3(0,0,0))
++        hprInterval2 = self.pandaActor.hprInterval(3, Point3(0,0,0), startHpr=Point3(180,0,0))
++
++        #Create and play the sequence that coordinates the intervals
++        self.pandaPace = Sequence(posInterval1, hprInterval1, 
++                                  posInterval2, hprInterval2,
++                                  name="pandaPace")
++
++        self.pandaPace.loop()
++
+     # Define a procedure to move the camera
+     def spinCameraTask(self, task):
+         angleDegrees = task.time * 6.0
+
+commit e7d37bc72bf4ad61469f28ad095e92d36f909386
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 1 10:59:16 2026 -0700
+
+    Load and animate panda actor
+
+diff --git a/main.py b/main.py
+index 4b258a0..d7a35f5 100644
+--- a/main.py
++++ b/main.py
+@@ -2,6 +2,7 @@ from math import pi, sin, cos
+ 
+ from direct.showbase.ShowBase import ShowBase
+ from direct.task import Task
++from direct.actor.Actor import Actor
+ 
+ class MyApp(ShowBase):
+ 
+@@ -19,6 +20,14 @@ class MyApp(ShowBase):
+         # Add the spinCameraTask procedure to the task manager
+         self.taskMgr.add(self.spinCameraTask, "SpinCameraTask")
+ 
++        # Load and transform the panda actor
++        self.pandaActor = Actor("models/panda-model",
++                                {"walk": "models/panda-walk4"})
++        self.pandaActor.setScale(0.005,0.005,0.005)
++        self.pandaActor.reparentTo(self.render)
++        # Loop its animation
++        self.pandaActor.loop("walk")
++
+     # Define a procedure to move the camera
+     def spinCameraTask(self, task):
+         angleDegrees = task.time * 6.0
+
+commit 39894cc3780ad5b438b9f704b39e53085c0e1143
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 1 10:56:24 2026 -0700
+
+    Add camera spin
+
+diff --git a/main.py b/main.py
+index 2360a3d..4b258a0 100644
+--- a/main.py
++++ b/main.py
+@@ -1,4 +1,7 @@
++from math import pi, sin, cos
++
+ from direct.showbase.ShowBase import ShowBase
++from direct.task import Task
+ 
+ class MyApp(ShowBase):
+ 
+@@ -12,6 +15,18 @@ class MyApp(ShowBase):
+         # Apply scale and position transforms on model
+         self.scene.setScale(0.25,0.25,0.25)
+         self.scene.setPos(-8,42,0)
++
++        # Add the spinCameraTask procedure to the task manager
++        self.taskMgr.add(self.spinCameraTask, "SpinCameraTask")
++
++    # Define a procedure to move the camera
++    def spinCameraTask(self, task):
++        angleDegrees = task.time * 6.0
++        angleRadians = angleDegrees * (pi/180.0)
++        self.camera.setPos(20 * sin(angleRadians), -20 * cos(angleRadians), 3)
++        self.camera.setHpr(angleDegrees,0,0)
++        return Task.cont
++
+         
+ app = MyApp()
+ app.run()
+\ No newline at end of file
+
+commit 2a0d474135b83f44eaab99d6c483ef1c3071e792
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 1 10:49:40 2026 -0700
+
+    Load and reposition environment model
+
+diff --git a/main.py b/main.py
+index 54b3469..2360a3d 100644
+--- a/main.py
++++ b/main.py
+@@ -5,5 +5,13 @@ class MyApp(ShowBase):
+     def __init__(self):
+         ShowBase.__init__(self)
+ 
++        #Load the environment model
++        self.scene = self.loader.loadModel("models/environment")
++        # Reparent the model to render
++        self.scene.reparentTo(self.render)
++        # Apply scale and position transforms on model
++        self.scene.setScale(0.25,0.25,0.25)
++        self.scene.setPos(-8,42,0)
++        
+ app = MyApp()
+ app.run()
+\ No newline at end of file
+
+commit 888bf6d91e18ddf145b79289b08d4231b10695bd
+Author: CodeWithJazmine <71017555+CodeWithJazmine@users.noreply.github.com>
+Date:   Wed Apr 1 10:42:04 2026 -0700
+
+    Initial project setup
+
+diff --git a/main.py b/main.py
+new file mode 100644
+index 0000000..54b3469
+--- /dev/null
++++ b/main.py
+@@ -0,0 +1,9 @@
++from direct.showbase.ShowBase import ShowBase
++
++class MyApp(ShowBase):
++
++    def __init__(self):
++        ShowBase.__init__(self)
++
++app = MyApp()
++app.run()
+\ No newline at end of file
