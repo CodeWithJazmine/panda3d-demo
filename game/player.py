@@ -111,6 +111,7 @@ class Player:
         if amount > 0:
             self.health -= amount
             self.base.hud.show_turn_result(f"You took {amount} damage.")
+            self.base.hud.update_health()
 
     def is_alive(self):
         if self.health > 0:

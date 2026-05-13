@@ -49,6 +49,7 @@ class Enemy:
         if amount > 0:
             self.health -= amount
             self.base.hud.show_turn_result(f"Enemy took {amount} damage.")
+            self.base.hud.update_health()
 
     def is_alive(self):
         if self.health > 0:

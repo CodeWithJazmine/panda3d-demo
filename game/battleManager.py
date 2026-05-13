@@ -7,7 +7,7 @@ class BattleManager:
     def start_battle(self, enemy):
         self.enemy = enemy
         self.base.player.disable_move()
-
+        self.base.hud.open_battle_hud()
         self.player_turn()
     
     def end_battle(self):
@@ -15,10 +15,12 @@ class BattleManager:
         self.base.hud.close_battle_hud()
     
     def player_turn(self):
-        self.base.hud.open_battle_hud()
         self.playersTurn = True
+        self.base.hud.enable_buttons()
 
     def move_chosen(self, move):
+        self.base.hud.disable_buttons()
+        
         if move == "bamboo bonk":
             self.base.player.bamboo_bonk(self.enemy)
         elif move == "leaf flurry":
@@ -30,7 +32,6 @@ class BattleManager:
 
     def enemy_turn(self):
         self.playersTurn = False
-        self.base.hud.close_battle_hud()
         #TODO: create enemy ai attacks, for now...
         self.base.player.take_damage(1)
 
