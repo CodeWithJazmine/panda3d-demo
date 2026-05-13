@@ -1,42 +1,40 @@
-# Panda Attack
+# Dungeon of Bones
 
-A small third-person turn-based game built with Python and Panda3D.
+A turn-based dungeon crawler built with Python and Panda3D.
 
-## What it demonstrates
-- Third-person character controller with keyboard input
-- Walk animation state system
-- Collision detection using bitmasks (pusher + event handlers)
-- Turn-based battle system architecture
-- HUD-driven combat input system
+Descend through increasingly dangerous floors, battle skeleton enemies, and collect treasure.
 
-## Gameplay Overview
-- Explore the world in third-person
-- Collide with an enemy to trigger battle mode
-- Choose moves through the HUD
-- Alternate turns between player and AI enemy
-- Defeat the enemy to return to exploration
+## Play
 
-## Preview
+Download the latest build on [itch.io](https://jazminechargualaf.itch.io/dungeon-of-bones)
 
-https://github.com/user-attachments/assets/6b94b20a-8478-434e-b2b9-a9fc59548943
+## Status
 
-## How to run
-1. Install Panda3D: `pip3 install panda3d`
-2. Run: `python3 main.py`
+Early development. Core battle system and player movement are functional.
+
+## Gameplay
+
+- Explore each dungeon floor in third-person
+- Collide with an enemy to trigger a turn-based battle
+- Choose your moves through the HUD
+- Defeat enemies to progress deeper
+- Find treasure chests between floors
 
 ## Controls
+
 - Arrow Up / Down — move forward / backward
 - Arrow Left / Right — turn
 - Escape — quit
 
-## Technical Focus
-This project emphasizes system design and separation of concerns, including:
-- BattleManager controlling turn flow
-- HUD acting as input layer
-- Modular combat architecture supporting player and AI actions
+## How to run locally
 
-## Future Additions
-- Enemy AI decision flow
-- Modular move system (player and enemy actions)
-- Combat moves defining behavior and effects
-- Entity-based state management (Player and Enemy)
+1. Install Panda3D: `pip3 install panda3d`
+2. Run: `python3 main.py`
+
+## Planned Features
+
+- Multiple character classes
+- Skeleton enemy variants per floor
+- Themed dungeon floors with increasing difficulty
+- Treasure chest system with stat boosts
+- Win/lose screens
